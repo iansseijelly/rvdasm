@@ -1,5 +1,6 @@
 use crate::insn::*;
 use crate::isa::*;
+use std::collections::HashMap;
 
 pub struct Disassembler {
 
@@ -16,15 +17,26 @@ impl Disassembler {
             // check if the masked result creates a match
             if spec.compare(code) {
                 // call the args function to get the arguments
-                let args: Vec<Arg> = spec.args.iter().map(|arg| arg(code)).collect();
-                let src_args: Vec<Arg> = args.iter().filter(|arg| arg.is_src()).cloned().collect();
-                let dst_args: Vec<Arg> = args.iter().filter(|arg| arg.is_dst()).cloned().collect();
-                let insn = Insn::new(code, &spec.name, src_args, dst_args);
+                let args: Vec<(Arg, String)> = spec.args.iter().map(|arg| arg(code)).collect();
+                let mut src_args = HashMap::new();
+                let mut dst_args = HashMap::new();
+                let mut flags = HashMap::new();
+                for (arg, tag) in args {
+                    if arg.is_src() {
+                        src_args.insert(tag, arg);
+                    } else if arg.is_dst() {
+                        dst_args.insert(tag, arg);
+                    } else if arg.is_flag() {
+                        flags.insert(tag, arg);
+                    }
+                }
+                let insn = Insn::new(code, &spec.name, src_args, dst_args, flags);
                 return Some(insn);
             }
         }
         None
     }
+    
     pub fn disassemble_from_str(&self, code: &str) -> Option<Insn> { 
         let code = u32::from_str_radix(code, 16).unwrap();
         self.disassmeble_one(code)
