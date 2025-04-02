@@ -8,6 +8,7 @@ pub enum Arg {
     Imm(i32),
     UImm(u32),
     Flag(u32),
+    CSR(u32),
     Nothing,
 }
 
@@ -34,6 +35,10 @@ impl Arg {
 
     pub fn is_flag(&self) -> bool {
         matches!(self, Arg::Flag(_))
+    }
+
+    pub fn is_csr(&self) -> bool {
+        matches!(self, Arg::CSR(_))
     }
 }
 
@@ -68,6 +73,10 @@ pub fn bimm12lo(_insn: u32) -> (Arg, String) { (Arg::Nothing, "".to_string()) }
 // shift amounts - unsigned 
 pub fn shamtd(insn: u32) -> (Arg, String) { (Arg::UImm(x(insn, 20, 6)), "imm".to_string()) }
 pub fn shamtw(insn: u32) -> (Arg, String) { (Arg::UImm(x(insn, 20, 5)), "imm".to_string()) }
+
+// csr
+pub fn csr(insn: u32) -> (Arg, String) { (Arg::CSR(x(insn, 20, 12)), "csr".to_string()) }
+pub fn zimm5(insn: u32) -> (Arg, String) { (Arg::UImm(x(insn, 15, 5)), "imm".to_string()) }
 
 // fence 
 // fence mode - TSO or normal

@@ -2,6 +2,7 @@ use crate::args::*;
 use crate::insn::*;
 use crate::isa::*;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 pub struct Disassembler {
 
@@ -22,6 +23,7 @@ impl Disassembler {
                 let mut src_args = HashMap::new();
                 let mut dst_args = HashMap::new();
                 let mut flags = HashMap::new();
+                let mut csr = None;
                 for (arg, tag) in args {
                     if arg.is_src() {
                         src_args.insert(tag, arg);
@@ -34,9 +36,11 @@ impl Disassembler {
                         let tag_parts: Vec<&str> = tag.split('_').collect();
                         src_args.insert(tag_parts[0].to_string(), src);
                         dst_args.insert(tag_parts[1].to_string(), dst);
+                    } else if arg.is_csr() {
+                        csr = Some(arg);
                     }
                 }
-                let insn = Insn::new(code, &spec.name, src_args, dst_args, flags);
+                let insn = Insn::new(code, &spec.name, src_args, dst_args, flags, csr);
                 return Some(insn);
             }
         }
@@ -47,5 +51,14 @@ impl Disassembler {
         let code = u32::from_str_radix(code, 16).unwrap();
         self.disassmeble_one(code)
      }
-    // fn disassemble_all(&self, code: &[u8], entry_point: u64) -> Vec<Insn> { return vec![]; }
+    pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<usize, Insn> { 
+        let mut insns = HashMap::new();
+        for i in (0..code.len()).step_by(4) {
+            let code_u32 = u32::from_le_bytes([code[i], code[i+1], code[i+2], code[i+3]]);
+            println!("{}: {:08x}", i, code_u32);
+            let insn = self.disassmeble_one(code_u32).unwrap();
+            insns.insert(i, insn);
+        }
+        insns
+    }
 }
