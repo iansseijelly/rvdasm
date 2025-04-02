@@ -34,11 +34,6 @@ impl Disassembler {
                         dst_args.insert(tag, arg);
                     } else if arg.is_flag() {
                         flags.insert(tag, arg);
-                    } else if arg.is_shared() {
-                        let (src, dst) = arg.split_shared();
-                        let tag_parts: Vec<&str> = tag.split('_').collect();
-                        src_args.insert(tag_parts[0].to_string(), src);
-                        dst_args.insert(tag_parts[1].to_string(), dst);
                     } else if arg.is_csr() {
                         csr = Some(arg);
                     }

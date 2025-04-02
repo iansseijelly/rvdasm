@@ -4,7 +4,6 @@ use std::collections::HashMap;
 pub enum Arg {
     DstReg(u32),
     SrcReg(u32),
-    SrcDstReg(u32), // shared rs1 and rd for C-extension
     Imm(i32),
     UImm(u32),
     Flag(u32),
@@ -13,17 +12,6 @@ pub enum Arg {
 }
 
 impl Arg {
-    pub fn is_shared(&self) -> bool {
-        matches!(self, Arg::SrcDstReg(_))
-    }
-
-    pub fn split_shared(&self) -> (Arg, Arg) {
-        // cast into src, and dst
-        match self {
-            Arg::SrcDstReg(val) => (Arg::SrcReg(*val), Arg::DstReg(*val)),
-            _ => panic!("Invalid shared argument"),
-        }
-    }
 
     pub fn is_src(&self) -> bool {
         matches!(self, Arg::SrcReg(_))
@@ -108,16 +96,21 @@ pub fn aq(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 26, 1)), "aq".to_stri
 // release - no earlier memop can be reordered after this
 pub fn rl(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 25, 1)), "rl".to_string()) }
 
+// floating point
+pub fn rd_f(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "rd_f".to_string()) }
+pub fn rs1_f(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 15, 5)), "rs1_f".to_string()) }
+pub fn rs2_f(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 20, 5)), "rs2_f".to_string()) }
+pub fn rs3_f(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 27, 5)), "rs3_f".to_string()) }
+pub fn rm(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 12, 3)), "rm".to_string()) }
+
 // compressed
 pub fn rd_p(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 2, 3)), "rd".to_string()) }
 pub fn rs1_p(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 7, 3)), "rs1".to_string()) }
-pub fn rd_rs1_p(insn: u32) -> (Arg, String) { (Arg::SrcDstReg(x(insn, 7, 3)), "rd_rs1".to_string()) }
 pub fn rs2_p(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 2, 3)), "rs2".to_string()) }
-pub fn rd_rs1_n0(insn: u32) -> (Arg, String) { (Arg::SrcDstReg(x(insn, 7, 5)), "rd_rs1".to_string()) }
 pub fn rs1_n0(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 7, 5)), "rs1".to_string()) }
 pub fn rd_n0(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "rd".to_string()) }
 pub fn rd_n2(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "rd".to_string()) }
-pub fn c_rs1_n0(insn: u32) -> (Arg, String) { (Arg::SrcDstReg(x(insn, 7, 5)), "rs1".to_string()) }
+pub fn c_rs1_n0(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 7, 5)), "rs1".to_string()) }
 pub fn c_rs2_n0(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 2, 5)), "rs2".to_string()) }
 pub fn c_rs2(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 2, 5)), "rs2".to_string()) }
 pub fn c_nzimm6hi(insn: u32) -> (Arg, String) { (Arg::UImm(x(insn, 2, 5) + (x(insn, 12, 1) << 5)), "imm".to_string()) }

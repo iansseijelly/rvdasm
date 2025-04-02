@@ -54,7 +54,7 @@ impl Insn {
         
         // Add csr arg
         if let Some(csr) = &self.csr {
-            operands.push(format!("CSR={}", csr.to_string()));
+            operands.push(format!("CSR#{}", csr.to_string()));
         }
         
         // Join all operands with commas
