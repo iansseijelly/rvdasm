@@ -26,7 +26,11 @@ impl Arg {
     }
 
     pub fn is_src(&self) -> bool {
-        matches!(self, Arg::SrcReg(_) | Arg::Imm(_) | Arg::UImm(_))
+        matches!(self, Arg::SrcReg(_))
+    }
+
+    pub fn is_imm(&self) -> bool {
+        matches!(self, Arg::Imm(_) | Arg::UImm(_))
     }
 
     pub fn is_dst(&self) -> bool {
@@ -39,6 +43,18 @@ impl Arg {
 
     pub fn is_csr(&self) -> bool {
         matches!(self, Arg::CSR(_))
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Arg::DstReg(val) => format!("{}", val),
+            Arg::SrcReg(val) => format!("{}", val),
+            Arg::Imm(val) => format!("{}", val),
+            Arg::UImm(val) => format!("{}", val),
+            Arg::Flag(val) => format!("{}", val),
+            Arg::CSR(val) => format!("{}", val),
+            _ => "".to_string(),
+        }
     }
 }
 
@@ -60,7 +76,7 @@ pub fn imm12(insn: u32) -> (Arg, String) { (Arg::Imm(xs(insn, 20, 12)), "imm".to
 // U-type immediate
 pub fn imm20(insn: u32) -> (Arg, String) { (Arg::Imm(xs(insn, 12, 20) << 12), "imm".to_string()) }
 // UJ-type immediate
-pub fn jimm20(insn: u32) -> (Arg, String) { (Arg::Imm(x(insn, 21, 10) as i32 + (x(insn, 20, 1) << 11) as i32 + 
+pub fn jimm20(insn: u32) -> (Arg, String) { (Arg::Imm((x(insn, 21, 10) << 1) as i32 + (x(insn, 20, 1) << 11) as i32 + 
     (x(insn, 12, 8) << 12) as i32 + (imm_sign(insn) << 20)), "imm".to_string()) }
 // S-type immediate
 pub fn imm12hi(insn: u32) -> (Arg, String) { (Arg::Imm(x(insn, 7, 5) as i32 + (xs(insn, 25, 7) << 5)), "imm".to_string()) }

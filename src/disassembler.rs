@@ -23,10 +23,13 @@ impl Disassembler {
                 let mut src_args = HashMap::new();
                 let mut dst_args = HashMap::new();
                 let mut flags = HashMap::new();
+                let mut imm = None;
                 let mut csr = None;
                 for (arg, tag) in args {
                     if arg.is_src() {
                         src_args.insert(tag, arg);
+                    } else if arg.is_imm() {
+                        imm = Some(arg);
                     } else if arg.is_dst() {
                         dst_args.insert(tag, arg);
                     } else if arg.is_flag() {
@@ -40,7 +43,7 @@ impl Disassembler {
                         csr = Some(arg);
                     }
                 }
-                let insn = Insn::new(code, &spec.name, src_args, dst_args, flags, csr);
+                let insn = Insn::new(code, &spec.name, src_args, imm, dst_args, flags, csr);
                 return Some(insn);
             }
         }
@@ -55,9 +58,8 @@ impl Disassembler {
         let mut insns = HashMap::new();
         for i in (0..code.len()).step_by(4) {
             let code_u32 = u32::from_le_bytes([code[i], code[i+1], code[i+2], code[i+3]]);
-            println!("{}: {:08x}", i, code_u32);
             let insn = self.disassmeble_one(code_u32).unwrap();
-            insns.insert(i, insn);
+            insns.insert(i + entry_point as usize, insn);
         }
         insns
     }
