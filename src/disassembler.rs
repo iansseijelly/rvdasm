@@ -1,3 +1,4 @@
+use crate::args::*;
 use crate::insn::*;
 use crate::isa::*;
 use std::collections::HashMap;
@@ -28,6 +29,11 @@ impl Disassembler {
                         dst_args.insert(tag, arg);
                     } else if arg.is_flag() {
                         flags.insert(tag, arg);
+                    } else if arg.is_shared() {
+                        let (src, dst) = arg.split_shared();
+                        let tag_parts: Vec<&str> = tag.split('_').collect();
+                        src_args.insert(tag_parts[0].to_string(), src);
+                        dst_args.insert(tag_parts[1].to_string(), dst);
                     }
                 }
                 let insn = Insn::new(code, &spec.name, src_args, dst_args, flags);
@@ -36,7 +42,7 @@ impl Disassembler {
         }
         None
     }
-    
+
     pub fn disassemble_from_str(&self, code: &str) -> Option<Insn> { 
         let code = u32::from_str_radix(code, 16).unwrap();
         self.disassmeble_one(code)
