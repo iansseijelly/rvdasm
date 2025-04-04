@@ -32,6 +32,7 @@ impl Insn {
         // Format the instruction name
         let mut parts = vec![self.name.clone()];
         
+        // TODO: add flags
         // Collect all operand parts
         let mut operands = Vec::new();
         
@@ -60,6 +61,46 @@ impl Insn {
         // Join all operands with commas
         if !operands.is_empty() {
             parts.push(operands.join(", "));
+        }
+        
+        // Join instruction name and operands with space
+        parts.join(" ")
+    }
+
+    pub fn to_canonical(&self) -> String {
+        // Format the instruction name
+        let mut parts = vec![self.name.clone()];
+
+        // Collect all operand parts
+        let mut operands = Vec::new();
+        
+        // Add dst args
+        for (k, v) in &self.dst {
+            operands.push(format!("{} {}{}", k.to_uppercase(), tag_to_string(k), v.to_string()));
+        }
+        
+        // Add src args - sort by tag
+        let mut src_operands = self.src.iter().map(|(k, v)| format!("{} {}{}", k.to_uppercase(), tag_to_string(k), v.to_string())).collect::<Vec<String>>();
+        src_operands.sort();
+        for operand in src_operands {
+            operands.push(operand);
+        }
+        
+        // Add imm arg
+        if let Some(imm) = &self.imm {
+            operands.push(format!("{} {}", "IMM", imm.to_string()));
+        }
+        
+        // Add csr arg
+        if let Some(csr) = &self.csr {
+            operands.push(format!("{} {}", "CSR", csr.to_string()));
+        }
+
+        // TODO: add flags
+        
+        // Join all operands with commas
+        if !operands.is_empty() {
+            parts.push(operands.join(" "));
         }
         
         // Join instruction name and operands with space
