@@ -2,7 +2,7 @@ use crate::args::*;
 use crate::insn::*;
 use crate::isa::*;
 use std::collections::HashMap;
-use std::hash::Hash;
+pub fn is_compressed(byte: u8) -> bool { byte & 0x03 < 0x03 }
 
 pub struct Disassembler {
 
@@ -48,13 +48,23 @@ impl Disassembler {
     pub fn disassemble_from_str(&self, code: &str) -> Option<Insn> { 
         let code = u32::from_str_radix(code, 16).unwrap();
         self.disassmeble_one(code)
-     }
+    }
+
     pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<usize, Insn> { 
         let mut insns = HashMap::new();
-        for i in (0..code.len()).step_by(4) {
-            let code_u32 = u32::from_le_bytes([code[i], code[i+1], code[i+2], code[i+3]]);
+        let mut i = 0;
+        while i < code.len() {
+            let code_u32;
+            if is_compressed(code[i]) {
+                code_u32 = u32::from_le_bytes([code[i], code[i+1], 0 as u8, 0 as u8]);
+            } else {
+                code_u32 = u32::from_le_bytes([code[i], code[i+1], code[i+2], code[i+3]]);
+            }
+            println!("disassembling 0x{:08x}", code_u32);
             let insn = self.disassmeble_one(code_u32).unwrap();
+            let insn_len = insn.get_len() as usize;
             insns.insert(i + entry_point as usize, insn);
+            i += insn_len;
         }
         insns
     }

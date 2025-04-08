@@ -28,6 +28,10 @@ impl Insn {
         Self { raw, name: name.to_string(), len: get_insn_size(raw), src, imm, dst, flags, csr }
     }
 
+    pub fn get_len(&self) -> u32 {
+        self.len
+    }
+
     pub fn to_string(&self) -> String {
         // Format the instruction name
         let mut parts = vec![self.name.clone()];

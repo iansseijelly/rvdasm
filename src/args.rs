@@ -57,6 +57,7 @@ pub fn rd(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "rd".to_str
 // src operands
 pub fn rs1(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 15, 5)), "rs1".to_string()) }
 pub fn rs2(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 20, 5)), "rs2".to_string()) }
+pub fn rs3(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 27, 5)), "rs3".to_string()) }
 
 // immediates - signed 
 // I-type immediate
@@ -97,10 +98,10 @@ pub fn aq(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 26, 1)), "aq".to_stri
 pub fn rl(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 25, 1)), "rl".to_string()) }
 
 // floating point
-pub fn rd_f(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "rd_f".to_string()) }
-pub fn rs1_f(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 15, 5)), "rs1_f".to_string()) }
-pub fn rs2_f(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 20, 5)), "rs2_f".to_string()) }
-pub fn rs3_f(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 27, 5)), "rs3_f".to_string()) }
+pub fn fd(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "fd".to_string()) }
+pub fn fs1(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 15, 5)), "fs1".to_string()) }
+pub fn fs2(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 20, 5)), "fs2".to_string()) }
+pub fn fs3(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 27, 5)), "fs3".to_string()) }
 pub fn rm(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 12, 3)), "rm".to_string()) }
 
 // compressed
