@@ -2,6 +2,8 @@ use crate::args::*;
 use crate::insn::*;
 use crate::isa::*;
 use std::collections::HashMap;
+
+/// Helper: Check if the instruction is RVC
 pub fn is_compressed(byte: u8) -> bool { byte & 0x03 < 0x03 }
 
 pub struct Disassembler {
