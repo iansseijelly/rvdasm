@@ -13,8 +13,10 @@ pub struct Insn {
     pub csr: Option<Arg>,
 }
 
+/// Helper: Get the size of the instruction in bytes
 fn get_insn_size(raw: u32) -> u32 { if ((raw) & 0x03) < 0x03 { 2 } else { 4 }}
 
+/// Helper: Convert a tag to a string
 fn tag_to_string(tag: &str) -> String {
     match tag {
         "rd" | "rs1" | "rs2" => "x".to_string(),
@@ -32,6 +34,7 @@ impl Insn {
         self.len
     }
 
+    /// Helper: Format the instruction to a string representation
     pub fn to_string(&self) -> String {
         // Format the instruction name
         let mut parts = vec![self.name.clone()];
@@ -71,6 +74,7 @@ impl Insn {
         parts.join(" ")
     }
 
+    /// Helper: Format the instruction to a canonicalized string representation
     pub fn to_canonical(&self) -> String {
         // Format the instruction name
         let mut parts = vec![self.name.clone()];

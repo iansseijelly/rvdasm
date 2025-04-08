@@ -12,27 +12,33 @@ pub enum Arg {
 }
 
 impl Arg {
-
+    
+    /// Helper: Check if the argument is a source operand
     pub fn is_src(&self) -> bool {
         matches!(self, Arg::SrcReg(_))
     }
 
+    /// Helper: Check if the argument is an immediate operand
     pub fn is_imm(&self) -> bool {
         matches!(self, Arg::Imm(_) | Arg::UImm(_))
     }
 
+    /// Helper: Check if the argument is a destination operand
     pub fn is_dst(&self) -> bool {
         matches!(self, Arg::DstReg(_))
     }
 
+    /// Helper: Check if the argument is a flag operand
     pub fn is_flag(&self) -> bool {
         matches!(self, Arg::Flag(_))
     }
 
+    /// Helper: Check if the argument is a CSR operand
     pub fn is_csr(&self) -> bool {
         matches!(self, Arg::CSR(_))
     }
 
+    /// Helper: Format the argument to a string representation
     pub fn to_string(&self) -> String {
         match self {
             Arg::DstReg(val) => format!("{}", val),

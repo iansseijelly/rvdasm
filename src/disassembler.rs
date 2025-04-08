@@ -13,6 +13,7 @@ impl Disassembler {
         Self {}
     }
 
+    /// Disassemble a single instruction
     pub fn disassmeble_one(&self, code: u32) -> Option<Insn> { 
         // iterator over all isa specs
         for spec in RV_ISA_SPECS.iter() {
@@ -45,11 +46,13 @@ impl Disassembler {
         None
     }
 
+    /// Disassemble a single instruction from a string
     pub fn disassemble_from_str(&self, code: &str) -> Option<Insn> { 
         let code = u32::from_str_radix(code, 16).unwrap();
         self.disassmeble_one(code)
     }
 
+    /// Disassemble all instructions in a binary
     pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<usize, Insn> { 
         let mut insns = HashMap::new();
         let mut i = 0;
