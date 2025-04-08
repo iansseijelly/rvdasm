@@ -2,6 +2,12 @@
 name = "rvdasm"
 version = "0.1.0"
 edition = "2024"
+description = "A RISC-V disassembler written in Rust"
+license = "MIT"
+repository = "https://github.com/iansseijelly/rvdasm"
+readme = "README.md"
+keywords = ["risc-v", "disassembler", "isa"]
+authors = ["iansseijelly <iansseijelly@berkeley.edu>"]
 
 [dependencies]
 once_cell = "1.17.0"
