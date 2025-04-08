@@ -1,5 +1,5 @@
 // tests for the disassembler
-use riscv_disasm::disassembler::Disassembler;
+use rvdasm::disassembler::Disassembler;
 use std::fs::File;
 use std::io::Read;
 
