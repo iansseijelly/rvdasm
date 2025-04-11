@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(Debug, Clone)]
 pub enum Arg {
     DstReg(u32),
@@ -99,7 +97,7 @@ pub fn jimm20(insn: u32) -> (Arg, String) { (Arg::Imm((x(insn, 21, 10) << 1) as 
 pub fn imm12hi(insn: u32) -> (Arg, String) { (Arg::Imm(x(insn, 7, 5) as i32 + (xs(insn, 25, 7) << 5)), "imm".to_string()) }
 pub fn imm12lo(_insn: u32) -> (Arg, String) { (Arg::Nothing, "".to_string()) }
 // SB-type immediate
-pub fn bimm12hi(insn: u32) -> (Arg, String) { (Arg::Imm(x(insn, 8, 4) as i32 + (x(insn, 25, 6) << 5) as i32 + 
+pub fn bimm12hi(insn: u32) -> (Arg, String) { (Arg::Imm((x(insn, 8, 4) << 1) as i32 + (x(insn, 25, 6) << 5) as i32 + 
     (x(insn, 7, 1) << 11) as i32 + (imm_sign(insn) << 12)), "imm".to_string()) }
 pub fn bimm12lo(_insn: u32) -> (Arg, String) { (Arg::Nothing, "".to_string()) }
 

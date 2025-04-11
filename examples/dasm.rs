@@ -1,9 +1,7 @@
 use rvdasm::disassembler::*;
 use std::fs::File;
 use std::io::Read;
-use std::io::Write;
 use object::{Object, ObjectSection};
-use log::debug;
 use clap::Parser;
 
 #[derive(Parser)]
@@ -52,8 +50,5 @@ fn main() {
         if args.print {
             println!("0x{:08x}: {:08x}     {}", key, decoded_insns[&key].get_raw(), decoded_insns[&key].to_string());
         }
-        // if args.output != "" {
-        //     dump_file.write_all(format!("0x{:08x}: {:08x}     {}\n", key, decoded_insns[&key].raw, decoded_insns[&key].to_string()).as_bytes()).unwrap();
-        // }
     }
 }

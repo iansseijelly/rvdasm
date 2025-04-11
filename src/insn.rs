@@ -86,11 +86,11 @@ impl Insn {
             operands.push(format!("{}{}", tag_to_string(k), v.to_string()));
         }
         
-        // Add src args - sort by tag
-        let mut src_operands = self.src.iter().map(|(k, v)| format!("{}{}", tag_to_string(k), v.to_string())).collect::<Vec<String>>();
-        src_operands.sort();
-        for operand in src_operands {
-            operands.push(operand);
+        // Add src args - sort by tag, not by value
+        let mut src_tags = self.src.keys().collect::<Vec<&String>>();   
+        src_tags.sort();
+        for tag in src_tags {
+            operands.push(format!("{}{}", tag_to_string(tag), self.src[tag].to_string()));
         }
         
         // Add imm arg
@@ -126,10 +126,10 @@ impl Insn {
         }
         
         // Add src args - sort by tag
-        let mut src_operands = self.src.iter().map(|(k, v)| format!("{} {}{}", k.to_uppercase(), tag_to_string(k), v.to_string())).collect::<Vec<String>>();
-        src_operands.sort();
-        for operand in src_operands {
-            operands.push(operand);
+        let mut src_tags = self.src.keys().collect::<Vec<&String>>();   
+        src_tags.sort();
+        for tag in src_tags {
+            operands.push(format!("{} {}{}", tag.to_uppercase(), tag_to_string(tag), self.src[tag].to_string()));
         }
         
         // Add imm arg
