@@ -9,13 +9,8 @@ A RISC-V disassmbler written in rust.
 * **Simple**: easy to read and modify
 
 The `isa.rs` file is generated from [iansseijelly:riscv-opcodes](https://github.com/iansseijelly/riscv-opcodes).
-Run
-
-```bash
-make EXTENSIONS='rv*_i rv*_m rv*_a rv*_c rv*_zicsr rv*_f rv_system rv*_d'
-```
-
-in that repo to generate `isa.rs`.
+This repo is also registered as a submodule in `${ROOT}/riscv-opcodes`.
+Run `gen.sh` in that repo to generate `isa.rs` and `isa_consts.rs`.
 
 ## Usage
 
