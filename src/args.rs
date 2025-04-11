@@ -150,3 +150,13 @@ pub fn c_nzuimm6hi(insn: u32) -> (Arg, String) { (Arg::UImm((x(insn, 2,4)) + (x(
 pub fn c_nzuimm6lo(_insn: u32) -> (Arg, String) { (Arg::Nothing, "".to_string()) }
 pub fn c_uimm8sp_s(insn: u32) -> (Arg, String) { (Arg::UImm((x(insn, 9, 4) << 2) + (x(insn, 7, 2) << 6)), "imm".to_string()) }
 
+// vector
+pub fn vd(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "vd".to_string()) }
+pub fn vs3(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 7, 5)), "vs3".to_string()) }
+pub fn vs1(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 15, 5)), "vs1".to_string()) }
+pub fn vs2(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 20, 5)), "vs2".to_string()) }
+
+pub fn vm(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 25, 1)), "vm".to_string()) }
+pub fn simm5(insn: u32) -> (Arg, String) { (Arg::Imm(xs(insn, 15, 5)), "imm".to_string()) }
+pub fn zimm10(insn: u32) -> (Arg, String) { (Arg::UImm(x(insn, 20, 10)), "imm".to_string()) }
+pub fn zimm11(insn: u32) -> (Arg, String) { (Arg::UImm(x(insn, 20, 11)), "imm".to_string()) }

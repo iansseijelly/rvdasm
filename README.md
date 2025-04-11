@@ -18,7 +18,7 @@ RUST_LOG=debug cargo run  --example dasm -- --file [ELF] --print
 
 ## Supported Extensions
 
-I, M, A , C, F, D, zicsr.
+I, M, A , C, F, D, V, zicsr.
 
 Distinguishes XLEN of 32 or 64.
 
