@@ -50,6 +50,28 @@ impl Arg {
             _ => "".to_string(),
         }
     }
+
+    /// Helper: Get the actual value of the immediate as a signed integer
+    /// must be an immediate
+    pub fn get_val_signed_imm(&self) -> i32 {
+        match self {
+            Arg::Imm(val) => *val,
+            Arg::UImm(val) => *val as i32,
+            _ => panic!("Invalid argument type for get_val_s"),
+        }
+    }
+
+    /// Helper: Get the actual value of the argument as an unsigned integer
+    /// must NOT be an immediate
+    pub fn get_val(&self) -> u32 {
+        match self {
+            Arg::DstReg(val) => *val,
+            Arg::SrcReg(val) => *val,
+            Arg::Flag(val) => *val,
+            Arg::CSR(val) => *val,
+            _ => panic!("Invalid argument type for get_val_u"),
+        }
+    }
 }
 
 // helper functions

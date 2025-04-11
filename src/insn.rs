@@ -1,6 +1,12 @@
 use crate::args::Arg;
 use std::collections::HashMap;
 
+const BRANCH_OPCODES: &[&str] = &["beq", "bge", "bgeu", "blt", "bltu", "bne", "beqz", "bnez",
+                                "bgez", "blez", "bltz", "bgtz", "bgt", "ble", "bgtu", "bleu",
+                                "c.beqz", "c.bnez", "c.bltz", "c.bgez"];
+const IJ_OPCODES: &[&str] = &["jal", "j", "call", "tail", "c.j", "c.jal"];
+const UJ_OPCODES: &[&str] = &["jalr", "jr", "c.jr", "c.jalr", "ret"];
+
 #[derive(Debug, Clone)]
 pub struct Insn {
     pub raw: u32,
@@ -52,6 +58,18 @@ impl Insn {
 
     pub fn get_dst(&self) -> HashMap<String, Arg> {
         self.dst.clone()
+    }
+
+    pub fn is_branch(&self) -> bool {
+        BRANCH_OPCODES.contains(&self.name.as_str())
+    }
+
+    pub fn is_direct_jump(&self) -> bool {
+        IJ_OPCODES.contains(&self.name.as_str())
+    }
+
+    pub fn is_indirect_jump(&self) -> bool {
+        UJ_OPCODES.contains(&self.name.as_str())
     }
 
     /// Helper: Format the instruction to a string representation
