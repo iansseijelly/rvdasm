@@ -1,11 +1,9 @@
-use rvdasm::disassembler::Disassembler;
+use rvdasm::disassembler::*;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use object::{Object, ObjectSection};
 use log::debug;
-
-// arg parse
 use clap::Parser;
 
 #[derive(Parser)]
@@ -19,12 +17,22 @@ struct Args {
 }
 
 fn main() {
-    let disassembler = Disassembler::new();
     let args = Args::parse();
     let mut elf_file = File::open(args.file.clone()).unwrap();
     let mut elf_buffer = Vec::new();
     elf_file.read_to_end(&mut elf_buffer).unwrap();
     let elf = object::File::parse(&*elf_buffer).unwrap();
+
+    let elf_arch = elf.architecture();
+    // elf.architecture() == object::Architecture::Riscv64
+    let xlen = if elf_arch == object::Architecture::Riscv64 {
+        Xlen::XLEN64
+    } else if elf_arch == object::Architecture::Riscv32 {
+        Xlen::XLEN32
+    } else {
+        panic!("Unsupported architecture: {:?}", elf_arch);
+    };
+    let disassembler = Disassembler::new(xlen);
 
     let text_section = elf.section_by_name(".text").unwrap();
     let text_data = text_section.data().unwrap();

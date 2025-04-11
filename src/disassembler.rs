@@ -6,19 +6,33 @@ use std::collections::HashMap;
 /// Helper: Check if the instruction is RVC
 pub fn is_compressed(byte: u8) -> bool { byte & 0x03 < 0x03 }
 
-pub struct Disassembler {
+pub enum Xlen {
+    XLEN32,
+    XLEN64,
+}
 
+pub struct Disassembler {
+    xlen: Xlen,
+    specs: Vec<Spec>,
 }
 
 impl Disassembler {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(xlen: Xlen) -> Self {
+        let xlen_specs = match xlen {
+            Xlen::XLEN32 => &*RV_ISA_SPECS_32,
+            Xlen::XLEN64 => &*RV_ISA_SPECS_64,
+        };
+        // concat regular and xlen spec
+        let mut specs = Vec::new();
+        specs.extend(RV_ISA_SPECS_REGULAR.iter().cloned());
+        specs.extend(xlen_specs.iter().cloned());
+        Self{ xlen, specs }
     }
 
     /// Disassemble a single instruction
     pub fn disassmeble_one(&self, code: u32) -> Option<Insn> { 
         // iterator over all isa specs
-        for spec in RV_ISA_SPECS.iter() {
+        for spec in self.specs.iter() {
             // check if the masked result creates a match
             if spec.compare(code) {
                 // call the args function to get the arguments
@@ -65,7 +79,6 @@ impl Disassembler {
             } else {
                 code_u32 = u32::from_le_bytes([code[i], code[i+1], code[i+2], code[i+3]]);
             }
-            println!("disassembling 0x{:08x}", code_u32);
             let insn = self.disassmeble_one(code_u32).unwrap();
             let insn_len = insn.get_len() as usize;
             insns.insert(i + entry_point as usize, insn);

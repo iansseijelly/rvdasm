@@ -1,10 +1,10 @@
 // tests for the disassembler
-use rvdasm::disassembler::Disassembler;
+use rvdasm::disassembler::*;
 use std::fs::File;
 use std::io::Read;
 
 fn test_decode_all(to_canonical: bool) {
-    let disassembler = Disassembler::new();
+    let disassembler = Disassembler::new(Xlen::XLEN64);
     let mut file = File::open("tests/data/test.bin").unwrap();
     let mut bin = Vec::new();
     file.read_to_end(&mut bin).unwrap();
