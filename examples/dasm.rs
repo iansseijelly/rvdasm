@@ -43,14 +43,14 @@ fn main() {
     let decoded_insns = disassembler.disassemble_all(&text_data, entry_point);
 
     // sort keys by address 
-    let mut keys: Vec<usize> = decoded_insns.keys().cloned().collect();
+    let mut keys: Vec<u64> = decoded_insns.keys().cloned().collect();
     keys.sort();
     
     // write to file with extension .dump
     // let mut dump_file = File::create(format!("{}.dump", args.file)).unwrap();
     for key in keys {
         if args.print {
-            println!("0x{:08x}: {:08x}     {}", key, decoded_insns[&key].raw, decoded_insns[&key].to_string());
+            println!("0x{:08x}: {:08x}     {}", key, decoded_insns[&key].get_raw(), decoded_insns[&key].to_string());
         }
         // if args.output != "" {
         //     dump_file.write_all(format!("0x{:08x}: {:08x}     {}\n", key, decoded_insns[&key].raw, decoded_insns[&key].to_string()).as_bytes()).unwrap();

@@ -69,7 +69,7 @@ impl Disassembler {
     }
 
     /// Disassemble all instructions in a binary
-    pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<usize, Insn> { 
+    pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<u64, Insn> { 
         let mut insns = HashMap::new();
         let mut i = 0;
         while i < code.len() {
@@ -81,7 +81,7 @@ impl Disassembler {
             }
             let insn = self.disassmeble_one(code_u32).unwrap();
             let insn_len = insn.get_len() as usize;
-            insns.insert(i + entry_point as usize, insn);
+            insns.insert(i as u64 + entry_point, insn);
             i += insn_len;
         }
         insns

@@ -34,6 +34,26 @@ impl Insn {
         self.len
     }
 
+    pub fn get_raw(&self) -> u32 {
+        self.raw
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn get_src(&self) -> HashMap<String, Arg> {
+        self.src.clone()
+    }
+
+    pub fn get_imm(&self) -> Option<Arg> {
+        self.imm.clone()
+    }
+
+    pub fn get_dst(&self) -> HashMap<String, Arg> {
+        self.dst.clone()
+    }
+
     /// Helper: Format the instruction to a string representation
     pub fn to_string(&self) -> String {
         // Format the instruction name

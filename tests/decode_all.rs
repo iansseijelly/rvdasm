@@ -10,13 +10,13 @@ fn test_decode_all(to_canonical: bool) {
     file.read_to_end(&mut bin).unwrap();
     let insns = disassembler.disassemble_all(&bin, 0x80000000);
     // sort keys by address 
-    let mut keys: Vec<usize> = insns.keys().cloned().collect();
+    let mut keys: Vec<u64> = insns.keys().cloned().collect();
     keys.sort();
     for key in keys {
         if to_canonical {
             println!("START INST {} TIMESTAMP 0 END", insns[&key].to_canonical());
         } else {
-            println!("0x{:08x}: {:08x}     {}", key, insns[&key].raw, insns[&key].to_string());
+            println!("0x{:08x}: {:08x}     {}", key, insns[&key].get_raw(), insns[&key].to_string());
         }
     }
 }
