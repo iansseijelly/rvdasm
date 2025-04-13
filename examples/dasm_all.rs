@@ -10,8 +10,6 @@ struct Args {
     file: String,
     #[clap(short, long, default_value = "false")]
     canonical: bool,
-    #[clap(short, long, default_value = "true")]
-    print: bool,
 }
 
 fn main() {
@@ -47,7 +45,9 @@ fn main() {
     // write to file with extension .dump
     // let mut dump_file = File::create(format!("{}.dump", args.file)).unwrap();
     for key in keys {
-        if args.print {
+        if args.canonical {
+            println!("{}", decoded_insns[&key].to_canonical());
+        } else {
             println!("0x{:08x}: {:08x}     {}", key, decoded_insns[&key].get_raw(), decoded_insns[&key].to_string());
         }
     }
