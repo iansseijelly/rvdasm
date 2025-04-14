@@ -37,26 +37,33 @@ impl Disassembler {
             if spec.compare(code) {
                 // call the args function to get the arguments
                 let args: Vec<(Arg, String)> = spec.args.iter().map(|arg| arg(code)).collect();
-                let mut src_args = HashMap::new();
-                let mut dst_args = HashMap::new();
-                let mut flags = HashMap::new();
-                let mut imm = None;
-                let mut csr = None;
-                for (arg, tag) in args {
-                    if arg.is_src() {
-                        src_args.insert(tag, arg);
-                    } else if arg.is_imm() {
-                        imm = Some(arg);
-                    } else if arg.is_dst() {
-                        dst_args.insert(tag, arg);
-                    } else if arg.is_flag() {
-                        flags.insert(tag, arg);
-                    } else if arg.is_csr() {
-                        csr = Some(arg);
+                // iterate over the args and check for Args::Error
+                let valid = args.iter().all(|(arg, _)| !arg.is_error());
+                if !valid {
+                    continue;
+                } else {
+                    // iterate over the args and check for Args::Error
+                    let mut src_args = HashMap::new();
+                    let mut dst_args = HashMap::new();
+                    let mut flags = HashMap::new();
+                    let mut imm = None;
+                    let mut csr = None;
+                    for (arg, tag) in args {
+                        if arg.is_src() {
+                            src_args.insert(tag, arg);
+                        } else if arg.is_imm() {
+                            imm = Some(arg);
+                        } else if arg.is_dst() {
+                            dst_args.insert(tag, arg);
+                        } else if arg.is_flag() {
+                            flags.insert(tag, arg);
+                        } else if arg.is_csr() {
+                            csr = Some(arg);
+                        }
                     }
+                    let insn = Insn::new(code, &spec.name, src_args, imm, dst_args, flags, csr);
+                    return Some(insn);
                 }
-                let insn = Insn::new(code, &spec.name, src_args, imm, dst_args, flags, csr);
-                return Some(insn);
             }
         }
         None

@@ -7,6 +7,7 @@ pub enum Arg {
     Flag(u32),
     CSR(u32),
     Nothing,
+    Error,
 }
 
 impl Arg {
@@ -34,6 +35,11 @@ impl Arg {
     /// Helper: Check if the argument is a CSR operand
     pub fn is_csr(&self) -> bool {
         matches!(self, Arg::CSR(_))
+    }
+
+    /// Helper: Check if the argument is an error
+    pub fn is_error(&self) -> bool {
+        matches!(self, Arg::Error)
     }
 
     /// Helper: Format the argument to a string representation
@@ -134,11 +140,11 @@ pub fn rm(insn: u32) -> (Arg, String) { (Arg::Flag(x(insn, 12, 3)), "rm".to_stri
 pub fn rd_p(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 2, 3)), "rd".to_string()) }
 pub fn rs1_p(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 7, 3)), "rs1".to_string()) }
 pub fn rs2_p(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 2, 3)), "rs2".to_string()) }
-pub fn rs1_n0(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 7, 5)), "rs1".to_string()) }
-pub fn rd_n0(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "rd".to_string()) }
-pub fn rd_n2(insn: u32) -> (Arg, String) { (Arg::DstReg(x(insn, 7, 5)), "rd".to_string()) }
-pub fn c_rs1_n0(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 7, 5)), "rs1".to_string()) }
-pub fn c_rs2_n0(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 2, 5)), "rs2".to_string()) }
+pub fn rs1_n0(insn: u32) -> (Arg, String) { match x(insn, 7, 5) { 0 => (Arg::Error, "".to_string()), val => (Arg::SrcReg(val), "rs1".to_string()) } }
+pub fn rd_n0(insn: u32) -> (Arg, String) { match x(insn, 7, 5) { 0 => (Arg::Error, "".to_string()), val => (Arg::DstReg(val), "rd".to_string()) } }
+pub fn rd_n2(insn: u32) -> (Arg, String) { match x(insn, 7, 5) { 0 | 2 => (Arg::Error, "".to_string()), val => (Arg::DstReg(val), "rd".to_string()) } }
+pub fn c_rs1_n0(insn: u32) -> (Arg, String) { match x(insn, 7, 5) { 0 => (Arg::Error, "".to_string()), val => (Arg::SrcReg(val), "rs1".to_string()) } }
+pub fn c_rs2_n0(insn: u32) -> (Arg, String) { match x(insn, 2, 5) { 0 => (Arg::Error, "".to_string()), val => (Arg::SrcReg(val), "rs2".to_string()) } }
 pub fn c_rs2(insn: u32) -> (Arg, String) { (Arg::SrcReg(x(insn, 2, 5)), "rs2".to_string()) }
 pub fn c_nzimm6hi(insn: u32) -> (Arg, String) { (Arg::UImm(x(insn, 2, 5) + (x(insn, 12, 1) << 5)), "imm".to_string()) }
 pub fn c_nzimm6lo(_insn: u32) -> (Arg, String) { (Arg::Nothing, "".to_string()) }
