@@ -25,7 +25,8 @@ fn get_insn_size(raw: u32) -> u32 { if ((raw) & 0x03) < 0x03 { 2 } else { 4 }}
 /// Helper: Convert a tag to a string
 fn tag_to_string(tag: &str) -> String {
     match tag {
-        "rd" | "rs1" | "rs2" => "x".to_string(),
+        "rd" | "rs1" | "rs2" | "rs3" => "x".to_string(),
+        "fd" | "fs1" | "fs2" | "fs3" => "f".to_string(),
         "imm" => "".to_string(),
         _ => tag.to_string(),
     }

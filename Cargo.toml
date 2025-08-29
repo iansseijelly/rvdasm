@@ -16,3 +16,4 @@ once_cell = "1.17.0"
 object = "0.36"
 clap = { version = "4.5.32", features = ["derive"] }
 log = "0.4.20"
+regex = "1.9.1"

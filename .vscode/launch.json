@@ -1,0 +1,176 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'rvdasm'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--lib",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "rvdasm",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'dasm_all'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=dasm_all",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "dasm_all",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'dasm_all'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=dasm_all",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "dasm_all",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'dasm_elf'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=dasm_elf",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "dasm_elf",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'dasm_elf'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=dasm_elf",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "dasm_elf",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'dasm_one'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=dasm_one",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "dasm_one",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'dasm_one'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=dasm_one",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "dasm_one",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'decode_all'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=decode_all",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "decode_all",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'decode_one'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=decode_one",
+          "--package=rvdasm"
+        ],
+        "filter": {
+          "name": "decode_one",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

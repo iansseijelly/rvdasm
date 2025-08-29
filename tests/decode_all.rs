@@ -23,10 +23,12 @@ fn test_decode_all(to_canonical: bool) {
 
 #[test]
 fn test_decode_all_canonical() {
+    println!("Testing canonical disassembly");
     test_decode_all(true);
 }
 
 #[test]
 fn test_decode_all_string() {
+    println!("Testing string disassembly");
     test_decode_all(false);
 }

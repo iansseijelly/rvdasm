@@ -20,27 +20,8 @@ impl Spec {
     }
 }
 
-pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
-    Spec::new("add", 0xfe00707f, 0x33, vec![rd, rs1, rs2]),
-    Spec::new("addi", 0x707f, 0x13, vec![rd, rs1, imm12]),
-    Spec::new("amoadd.w", 0xf800707f, 0x202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amoand.w", 0xf800707f, 0x6000202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amomax.w", 0xf800707f, 0xa000202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amomaxu.w", 0xf800707f, 0xe000202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amomin.w", 0xf800707f, 0x8000202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amominu.w", 0xf800707f, 0xc000202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amoor.w", 0xf800707f, 0x4000202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amoswap.w", 0xf800707f, 0x800202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("amoxor.w", 0xf800707f, 0x2000202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("and", 0xfe00707f, 0x7033, vec![rd, rs1, rs2]),
-    Spec::new("andi", 0x707f, 0x7013, vec![rd, rs1, imm12]),
-    Spec::new("auipc", 0x7f, 0x17, vec![rd, imm20]),
-    Spec::new("beq", 0x707f, 0x63, vec![bimm12hi, rs1, rs2, bimm12lo]),
-    Spec::new("bge", 0x707f, 0x5063, vec![bimm12hi, rs1, rs2, bimm12lo]),
-    Spec::new("bgeu", 0x707f, 0x7063, vec![bimm12hi, rs1, rs2, bimm12lo]),
-    Spec::new("blt", 0x707f, 0x4063, vec![bimm12hi, rs1, rs2, bimm12lo]),
-    Spec::new("bltu", 0x707f, 0x6063, vec![bimm12hi, rs1, rs2, bimm12lo]),
-    Spec::new("bne", 0x707f, 0x1063, vec![bimm12hi, rs1, rs2, bimm12lo]),
+// Compressed instructions (16-bit) - general (not XLEN-specific)
+pub static RV_ISA_SPECS_GENERIC_COMPRESSED: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("c.add", 0xf003, 0x9002, vec![rd_n0, rs1_n0, c_rs2_n0]),
     Spec::new("c.addi", 0xe003, 0x1, vec![rd_n0, rs1_n0, c_nzimm6lo, c_nzimm6hi]),
     Spec::new("c.addi16sp", 0xef83, 0x6101, vec![c_nzimm10hi, c_nzimm10lo]),
@@ -68,16 +49,191 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("c.sw", 0xe003, 0xc000, vec![rs1_p, rs2_p, c_uimm7lo, c_uimm7hi]),
     Spec::new("c.swsp", 0xe003, 0xc002, vec![c_rs2, c_uimm8sp_s]),
     Spec::new("c.xor", 0xfc63, 0x8c21, vec![rd_p, rs1_p, rs2_p]),
-    Spec::new("csrrc", 0x707f, 0x3073, vec![rd, rs1, csr]),
-    Spec::new("csrrci", 0x707f, 0x7073, vec![rd, csr, zimm5]),
-    Spec::new("csrrs", 0x707f, 0x2073, vec![rd, rs1, csr]),
-    Spec::new("csrrsi", 0x707f, 0x6073, vec![rd, csr, zimm5]),
-    Spec::new("csrrw", 0x707f, 0x1073, vec![rd, rs1, csr]),
-    Spec::new("csrrwi", 0x707f, 0x5073, vec![rd, csr, zimm5]),
+]);
+
+// Compressed instructions (16-bit) - 32-bit specific
+pub static RV_ISA_SPECS_32_COMPRESSED: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("c.flw", 0xe003, 0x6000, vec![rd_p, rs1_p, c_uimm7lo, c_uimm7hi]),
+    Spec::new("c.flwsp", 0xe003, 0x6002, vec![rd, c_uimm8sphi, c_uimm8splo]),
+    Spec::new("c.fsw", 0xe003, 0xe000, vec![rs1_p, rs2_p, c_uimm7lo, c_uimm7hi]),
+    Spec::new("c.fswsp", 0xe003, 0xe002, vec![c_rs2, c_uimm8sp_s]),
+    Spec::new("c.jal", 0xe003, 0x2001, vec![c_imm12]),
+]);
+
+// Compressed instructions (16-bit) - 64-bit specific
+pub static RV_ISA_SPECS_64_COMPRESSED: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("c.addiw", 0xe003, 0x2001, vec![rd_n0, rs1_n0, c_imm6lo, c_imm6hi]),
+    Spec::new("c.addw", 0xfc63, 0x9c21, vec![rd_p, rs1_p, rs2_p]),
+    Spec::new("c.ld", 0xe003, 0x6000, vec![rd_p, rs1_p, c_uimm8lo, c_uimm8hi]),
+    Spec::new("c.ldsp", 0xe003, 0x6002, vec![rd_n0, c_uimm9sphi, c_uimm9splo]),
+    Spec::new("c.sd", 0xe003, 0xe000, vec![rs1_p, rs2_p, c_uimm8hi, c_uimm8lo]),
+    Spec::new("c.sdsp", 0xe003, 0xe002, vec![c_rs2, c_uimm9sp_s]),
+    Spec::new("c.slli", 0xe003, 0x2, vec![rd_n0, rs1_n0, c_nzuimm6hi, c_nzuimm6lo]),
+    Spec::new("c.srai", 0xec03, 0x8401, vec![rd_p, rs1_p, c_nzuimm6lo, c_nzuimm6hi]),
+    Spec::new("c.srli", 0xec03, 0x8001, vec![rd_p, rs1_p, c_nzuimm6lo, c_nzuimm6hi]),
+    Spec::new("c.subw", 0xfc63, 0x9c01, vec![rd_p, rs1_p, rs2_p]),
+]);
+
+// Full instructions (32-bit) - general (not XLEN-specific) grouped by opcode
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_03: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("lb", 0x707f, 0x3, vec![rd, rs1, imm12]),
+    Spec::new("lbu", 0x707f, 0x4003, vec![rd, rs1, imm12]),
+    Spec::new("lh", 0x707f, 0x1003, vec![rd, rs1, imm12]),
+    Spec::new("lhu", 0x707f, 0x5003, vec![rd, rs1, imm12]),
+    Spec::new("lw", 0x707f, 0x2003, vec![rd, rs1, imm12]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_07: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("fld", 0x707f, 0x3007, vec![fd, rs1, imm12]),
+    Spec::new("flw", 0x707f, 0x2007, vec![fd, rs1, imm12]),
+    Spec::new("vl1re16.v", 0xfff0707f, 0x2805007, vec![rs1, vd]),
+    Spec::new("vl1re32.v", 0xfff0707f, 0x2806007, vec![rs1, vd]),
+    Spec::new("vl1re64.v", 0xfff0707f, 0x2807007, vec![rs1, vd]),
+    Spec::new("vl1re8.v", 0xfff0707f, 0x2800007, vec![rs1, vd]),
+    Spec::new("vl2re16.v", 0xfff0707f, 0x22805007, vec![rs1, vd]),
+    Spec::new("vl2re32.v", 0xfff0707f, 0x22806007, vec![rs1, vd]),
+    Spec::new("vl2re64.v", 0xfff0707f, 0x22807007, vec![rs1, vd]),
+    Spec::new("vl2re8.v", 0xfff0707f, 0x22800007, vec![rs1, vd]),
+    Spec::new("vl4re16.v", 0xfff0707f, 0x62805007, vec![rs1, vd]),
+    Spec::new("vl4re32.v", 0xfff0707f, 0x62806007, vec![rs1, vd]),
+    Spec::new("vl4re64.v", 0xfff0707f, 0x62807007, vec![rs1, vd]),
+    Spec::new("vl4re8.v", 0xfff0707f, 0x62800007, vec![rs1, vd]),
+    Spec::new("vl8re16.v", 0xfff0707f, 0xe2805007, vec![rs1, vd]),
+    Spec::new("vl8re32.v", 0xfff0707f, 0xe2806007, vec![rs1, vd]),
+    Spec::new("vl8re64.v", 0xfff0707f, 0xe2807007, vec![rs1, vd]),
+    Spec::new("vl8re8.v", 0xfff0707f, 0xe2800007, vec![rs1, vd]),
+    Spec::new("vle16.v", 0xfdf0707f, 0x5007, vec![vm, rs1, vd]),
+    Spec::new("vle16ff.v", 0xfdf0707f, 0x1005007, vec![vm, rs1, vd]),
+    Spec::new("vle32.v", 0xfdf0707f, 0x6007, vec![vm, rs1, vd]),
+    Spec::new("vle32ff.v", 0xfdf0707f, 0x1006007, vec![vm, rs1, vd]),
+    Spec::new("vle64.v", 0xfdf0707f, 0x7007, vec![vm, rs1, vd]),
+    Spec::new("vle64ff.v", 0xfdf0707f, 0x1007007, vec![vm, rs1, vd]),
+    Spec::new("vle8.v", 0xfdf0707f, 0x7, vec![vm, rs1, vd]),
+    Spec::new("vle8ff.v", 0xfdf0707f, 0x1000007, vec![vm, rs1, vd]),
+    Spec::new("vlm.v", 0xfff0707f, 0x2b00007, vec![rs1, vd]),
+    Spec::new("vloxei16.v", 0xfc00707f, 0xc005007, vec![vm, vs2, rs1, vd]),
+    Spec::new("vloxei32.v", 0xfc00707f, 0xc006007, vec![vm, vs2, rs1, vd]),
+    Spec::new("vloxei64.v", 0xfc00707f, 0xc007007, vec![vm, vs2, rs1, vd]),
+    Spec::new("vloxei8.v", 0xfc00707f, 0xc000007, vec![vm, vs2, rs1, vd]),
+    Spec::new("vlse16.v", 0xfc00707f, 0x8005007, vec![vm, rs2, rs1, vd]),
+    Spec::new("vlse32.v", 0xfc00707f, 0x8006007, vec![vm, rs2, rs1, vd]),
+    Spec::new("vlse64.v", 0xfc00707f, 0x8007007, vec![vm, rs2, rs1, vd]),
+    Spec::new("vlse8.v", 0xfc00707f, 0x8000007, vec![vm, rs2, rs1, vd]),
+    Spec::new("vluxei16.v", 0xfc00707f, 0x4005007, vec![vm, vs2, rs1, vd]),
+    Spec::new("vluxei32.v", 0xfc00707f, 0x4006007, vec![vm, vs2, rs1, vd]),
+    Spec::new("vluxei64.v", 0xfc00707f, 0x4007007, vec![vm, vs2, rs1, vd]),
+    Spec::new("vluxei8.v", 0xfc00707f, 0x4000007, vec![vm, vs2, rs1, vd]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_0F: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("fence", 0x707f, 0xf, vec![fm, pred, succ, rs1, rd]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_13: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("addi", 0x707f, 0x13, vec![rd, rs1, imm12]),
+    Spec::new("andi", 0x707f, 0x7013, vec![rd, rs1, imm12]),
+    Spec::new("ori", 0x707f, 0x6013, vec![rd, rs1, imm12]),
+    Spec::new("slti", 0x707f, 0x2013, vec![rd, rs1, imm12]),
+    Spec::new("sltiu", 0x707f, 0x3013, vec![rd, rs1, imm12]),
+    Spec::new("xori", 0x707f, 0x4013, vec![rd, rs1, imm12]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_17: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("auipc", 0x7f, 0x17, vec![rd, imm20]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_23: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("sb", 0x707f, 0x23, vec![imm12hi, rs1, rs2, imm12lo]),
+    Spec::new("sh", 0x707f, 0x1023, vec![imm12hi, rs1, rs2, imm12lo]),
+    Spec::new("sw", 0x707f, 0x2023, vec![imm12hi, rs1, rs2, imm12lo]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_27: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("fsd", 0x707f, 0x3027, vec![imm12hi, rs1, fs2, imm12lo]),
+    Spec::new("fsw", 0x707f, 0x2027, vec![imm12hi, rs1, fs2, imm12lo]),
+    Spec::new("vs1r.v", 0xfff0707f, 0x2800027, vec![rs1, vs3]),
+    Spec::new("vs2r.v", 0xfff0707f, 0x22800027, vec![rs1, vs3]),
+    Spec::new("vs4r.v", 0xfff0707f, 0x62800027, vec![rs1, vs3]),
+    Spec::new("vs8r.v", 0xfff0707f, 0xe2800027, vec![rs1, vs3]),
+    Spec::new("vse16.v", 0xfdf0707f, 0x5027, vec![vm, rs1, vs3]),
+    Spec::new("vse32.v", 0xfdf0707f, 0x6027, vec![vm, rs1, vs3]),
+    Spec::new("vse64.v", 0xfdf0707f, 0x7027, vec![vm, rs1, vs3]),
+    Spec::new("vse8.v", 0xfdf0707f, 0x27, vec![vm, rs1, vs3]),
+    Spec::new("vsm.v", 0xfff0707f, 0x2b00027, vec![rs1, vs3]),
+    Spec::new("vsoxei16.v", 0xfc00707f, 0xc005027, vec![vm, vs2, rs1, vs3]),
+    Spec::new("vsoxei32.v", 0xfc00707f, 0xc006027, vec![vm, vs2, rs1, vs3]),
+    Spec::new("vsoxei64.v", 0xfc00707f, 0xc007027, vec![vm, vs2, rs1, vs3]),
+    Spec::new("vsoxei8.v", 0xfc00707f, 0xc000027, vec![vm, vs2, rs1, vs3]),
+    Spec::new("vsse16.v", 0xfc00707f, 0x8005027, vec![vm, rs2, rs1, vs3]),
+    Spec::new("vsse32.v", 0xfc00707f, 0x8006027, vec![vm, rs2, rs1, vs3]),
+    Spec::new("vsse64.v", 0xfc00707f, 0x8007027, vec![vm, rs2, rs1, vs3]),
+    Spec::new("vsse8.v", 0xfc00707f, 0x8000027, vec![vm, rs2, rs1, vs3]),
+    Spec::new("vsuxei16.v", 0xfc00707f, 0x4005027, vec![vm, vs2, rs1, vs3]),
+    Spec::new("vsuxei32.v", 0xfc00707f, 0x4006027, vec![vm, vs2, rs1, vs3]),
+    Spec::new("vsuxei64.v", 0xfc00707f, 0x4007027, vec![vm, vs2, rs1, vs3]),
+    Spec::new("vsuxei8.v", 0xfc00707f, 0x4000027, vec![vm, vs2, rs1, vs3]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_2F: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("amoadd.w", 0xf800707f, 0x202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amoand.w", 0xf800707f, 0x6000202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amomax.w", 0xf800707f, 0xa000202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amomaxu.w", 0xf800707f, 0xe000202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amomin.w", 0xf800707f, 0x8000202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amominu.w", 0xf800707f, 0xc000202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amoor.w", 0xf800707f, 0x4000202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amoswap.w", 0xf800707f, 0x800202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("amoxor.w", 0xf800707f, 0x2000202f, vec![rd, rs1, rs2, aq, rl]),
+    Spec::new("lr.w", 0xf9f0707f, 0x1000202f, vec![rd, rs1, aq, rl]),
+    Spec::new("sc.w", 0xf800707f, 0x1800202f, vec![rd, rs1, rs2, aq, rl]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_33: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("add", 0xfe00707f, 0x33, vec![rd, rs1, rs2]),
+    Spec::new("and", 0xfe00707f, 0x7033, vec![rd, rs1, rs2]),
     Spec::new("div", 0xfe00707f, 0x2004033, vec![rd, rs1, rs2]),
     Spec::new("divu", 0xfe00707f, 0x2005033, vec![rd, rs1, rs2]),
-    Spec::new("ebreak", 0xffffffff, 0x100073, vec![]),
-    Spec::new("ecall", 0xffffffff, 0x73, vec![]),
+    Spec::new("mul", 0xfe00707f, 0x2000033, vec![rd, rs1, rs2]),
+    Spec::new("mulh", 0xfe00707f, 0x2001033, vec![rd, rs1, rs2]),
+    Spec::new("mulhsu", 0xfe00707f, 0x2002033, vec![rd, rs1, rs2]),
+    Spec::new("mulhu", 0xfe00707f, 0x2003033, vec![rd, rs1, rs2]),
+    Spec::new("or", 0xfe00707f, 0x6033, vec![rd, rs1, rs2]),
+    Spec::new("rem", 0xfe00707f, 0x2006033, vec![rd, rs1, rs2]),
+    Spec::new("remu", 0xfe00707f, 0x2007033, vec![rd, rs1, rs2]),
+    Spec::new("sll", 0xfe00707f, 0x1033, vec![rd, rs1, rs2]),
+    Spec::new("slt", 0xfe00707f, 0x2033, vec![rd, rs1, rs2]),
+    Spec::new("sltu", 0xfe00707f, 0x3033, vec![rd, rs1, rs2]),
+    Spec::new("sra", 0xfe00707f, 0x40005033, vec![rd, rs1, rs2]),
+    Spec::new("srl", 0xfe00707f, 0x5033, vec![rd, rs1, rs2]),
+    Spec::new("sub", 0xfe00707f, 0x40000033, vec![rd, rs1, rs2]),
+    Spec::new("xor", 0xfe00707f, 0x4033, vec![rd, rs1, rs2]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_37: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("lui", 0x7f, 0x37, vec![rd, imm20]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_43: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("fmadd.d", 0x600007f, 0x2000043, vec![fd, fs1, fs2, fs3, rm]),
+    Spec::new("fmadd.s", 0x600007f, 0x43, vec![fd, fs1, fs2, fs3, rm]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_47: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("fmsub.d", 0x600007f, 0x2000047, vec![fd, fs1, fs2, fs3, rm]),
+    Spec::new("fmsub.s", 0x600007f, 0x47, vec![fd, fs1, fs2, fs3, rm]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_4B: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("fnmsub.d", 0x600007f, 0x200004b, vec![fd, fs1, fs2, fs3, rm]),
+    Spec::new("fnmsub.s", 0x600007f, 0x4b, vec![fd, fs1, fs2, fs3, rm]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_4F: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("fnmadd.d", 0x600007f, 0x200004f, vec![fd, fs1, fs2, fs3, rm]),
+    Spec::new("fnmadd.s", 0x600007f, 0x4f, vec![fd, fs1, fs2, fs3, rm]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_53: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("fadd.d", 0xfe00007f, 0x2000053, vec![fd, fs1, fs2, rm]),
     Spec::new("fadd.s", 0xfe00007f, 0x53, vec![fd, fs1, fs2, rm]),
     Spec::new("fclass.d", 0xfff0707f, 0xe2001053, vec![rd, fs1]),
@@ -94,32 +250,20 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("fcvt.wu.s", 0xfff0007f, 0xc0100053, vec![rd, fs1, rm]),
     Spec::new("fdiv.d", 0xfe00007f, 0x1a000053, vec![fd, fs1, fs2, rm]),
     Spec::new("fdiv.s", 0xfe00007f, 0x18000053, vec![fd, fs1, fs2, rm]),
-    Spec::new("fence", 0x707f, 0xf, vec![fm, pred, succ, rs1, rd]),
     Spec::new("feq.d", 0xfe00707f, 0xa2002053, vec![fd, fs1, fs2]),
     Spec::new("feq.s", 0xfe00707f, 0xa0002053, vec![fd, fs1, fs2]),
-    Spec::new("fld", 0x707f, 0x3007, vec![fd, rs1, imm12]),
     Spec::new("fle.d", 0xfe00707f, 0xa2000053, vec![fd, fs1, fs2]),
     Spec::new("fle.s", 0xfe00707f, 0xa0000053, vec![fd, fs1, fs2]),
     Spec::new("flt.d", 0xfe00707f, 0xa2001053, vec![fd, fs1, fs2]),
     Spec::new("flt.s", 0xfe00707f, 0xa0001053, vec![fd, fs1, fs2]),
-    Spec::new("flw", 0x707f, 0x2007, vec![fd, rs1, imm12]),
-    Spec::new("fmadd.d", 0x600007f, 0x2000043, vec![fd, fs1, fs2, fs3, rm]),
-    Spec::new("fmadd.s", 0x600007f, 0x43, vec![fd, fs1, fs2, fs3, rm]),
     Spec::new("fmax.d", 0xfe00707f, 0x2a001053, vec![fd, fs1, fs2]),
     Spec::new("fmax.s", 0xfe00707f, 0x28001053, vec![fd, fs1, fs2]),
     Spec::new("fmin.d", 0xfe00707f, 0x2a000053, vec![fd, fs1, fs2]),
     Spec::new("fmin.s", 0xfe00707f, 0x28000053, vec![fd, fs1, fs2]),
-    Spec::new("fmsub.d", 0x600007f, 0x2000047, vec![fd, fs1, fs2, fs3, rm]),
-    Spec::new("fmsub.s", 0x600007f, 0x47, vec![fd, fs1, fs2, fs3, rm]),
     Spec::new("fmul.d", 0xfe00007f, 0x12000053, vec![fd, fs1, fs2, rm]),
     Spec::new("fmul.s", 0xfe00007f, 0x10000053, vec![fd, fs1, fs2, rm]),
     Spec::new("fmv.w.x", 0xfff0707f, 0xf0000053, vec![fd, rs1]),
     Spec::new("fmv.x.w", 0xfff0707f, 0xe0000053, vec![rd, fs1]),
-    Spec::new("fnmadd.d", 0x600007f, 0x200004f, vec![fd, fs1, fs2, fs3, rm]),
-    Spec::new("fnmadd.s", 0x600007f, 0x4f, vec![fd, fs1, fs2, fs3, rm]),
-    Spec::new("fnmsub.d", 0x600007f, 0x200004b, vec![fd, fs1, fs2, fs3, rm]),
-    Spec::new("fnmsub.s", 0x600007f, 0x4b, vec![fd, fs1, fs2, fs3, rm]),
-    Spec::new("fsd", 0x707f, 0x3027, vec![imm12hi, rs1, fs2, imm12lo]),
     Spec::new("fsgnj.d", 0xfe00707f, 0x22000053, vec![fd, fs1, fs2]),
     Spec::new("fsgnj.s", 0xfe00707f, 0x20000053, vec![fd, fs1, fs2]),
     Spec::new("fsgnjn.d", 0xfe00707f, 0x22001053, vec![fd, fs1, fs2]),
@@ -130,37 +274,9 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("fsqrt.s", 0xfff0007f, 0x58000053, vec![fd, fs1, rm]),
     Spec::new("fsub.d", 0xfe00007f, 0xa000053, vec![fd, fs1, fs2, rm]),
     Spec::new("fsub.s", 0xfe00007f, 0x8000053, vec![fd, fs1, fs2, rm]),
-    Spec::new("fsw", 0x707f, 0x2027, vec![imm12hi, rs1, fs2, imm12lo]),
-    Spec::new("jal", 0x7f, 0x6f, vec![rd, jimm20]),
-    Spec::new("jalr", 0x707f, 0x67, vec![rd, rs1, imm12]),
-    Spec::new("lb", 0x707f, 0x3, vec![rd, rs1, imm12]),
-    Spec::new("lbu", 0x707f, 0x4003, vec![rd, rs1, imm12]),
-    Spec::new("lh", 0x707f, 0x1003, vec![rd, rs1, imm12]),
-    Spec::new("lhu", 0x707f, 0x5003, vec![rd, rs1, imm12]),
-    Spec::new("lr.w", 0xf9f0707f, 0x1000202f, vec![rd, rs1, aq, rl]),
-    Spec::new("lui", 0x7f, 0x37, vec![rd, imm20]),
-    Spec::new("lw", 0x707f, 0x2003, vec![rd, rs1, imm12]),
-    Spec::new("mret", 0xffffffff, 0x30200073, vec![]),
-    Spec::new("mul", 0xfe00707f, 0x2000033, vec![rd, rs1, rs2]),
-    Spec::new("mulh", 0xfe00707f, 0x2001033, vec![rd, rs1, rs2]),
-    Spec::new("mulhsu", 0xfe00707f, 0x2002033, vec![rd, rs1, rs2]),
-    Spec::new("mulhu", 0xfe00707f, 0x2003033, vec![rd, rs1, rs2]),
-    Spec::new("or", 0xfe00707f, 0x6033, vec![rd, rs1, rs2]),
-    Spec::new("ori", 0x707f, 0x6013, vec![rd, rs1, imm12]),
-    Spec::new("rem", 0xfe00707f, 0x2006033, vec![rd, rs1, rs2]),
-    Spec::new("remu", 0xfe00707f, 0x2007033, vec![rd, rs1, rs2]),
-    Spec::new("sb", 0x707f, 0x23, vec![imm12hi, rs1, rs2, imm12lo]),
-    Spec::new("sc.w", 0xf800707f, 0x1800202f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("sh", 0x707f, 0x1023, vec![imm12hi, rs1, rs2, imm12lo]),
-    Spec::new("sll", 0xfe00707f, 0x1033, vec![rd, rs1, rs2]),
-    Spec::new("slt", 0xfe00707f, 0x2033, vec![rd, rs1, rs2]),
-    Spec::new("slti", 0x707f, 0x2013, vec![rd, rs1, imm12]),
-    Spec::new("sltiu", 0x707f, 0x3013, vec![rd, rs1, imm12]),
-    Spec::new("sltu", 0xfe00707f, 0x3033, vec![rd, rs1, rs2]),
-    Spec::new("sra", 0xfe00707f, 0x40005033, vec![rd, rs1, rs2]),
-    Spec::new("srl", 0xfe00707f, 0x5033, vec![rd, rs1, rs2]),
-    Spec::new("sub", 0xfe00707f, 0x40000033, vec![rd, rs1, rs2]),
-    Spec::new("sw", 0x707f, 0x2023, vec![imm12hi, rs1, rs2, imm12lo]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_57: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("vaadd.vv", 0xfc00707f, 0x24002057, vec![vm, vs2, vs1, vd]),
     Spec::new("vaadd.vx", 0xfc00707f, 0x24006057, vec![vm, vs2, rs1, vd]),
     Spec::new("vaaddu.vv", 0xfc00707f, 0x20002057, vec![vm, vs2, vs1, vd]),
@@ -278,43 +394,6 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("vfwsub.wv", 0xfc00707f, 0xd8001057, vec![vm, vs2, vs1, vd]),
     Spec::new("vid.v", 0xfdfff07f, 0x5008a057, vec![vm, vd]),
     Spec::new("viota.m", 0xfc0ff07f, 0x50082057, vec![vm, vs2, vd]),
-    Spec::new("vl1re16.v", 0xfff0707f, 0x2805007, vec![rs1, vd]),
-    Spec::new("vl1re32.v", 0xfff0707f, 0x2806007, vec![rs1, vd]),
-    Spec::new("vl1re64.v", 0xfff0707f, 0x2807007, vec![rs1, vd]),
-    Spec::new("vl1re8.v", 0xfff0707f, 0x2800007, vec![rs1, vd]),
-    Spec::new("vl2re16.v", 0xfff0707f, 0x22805007, vec![rs1, vd]),
-    Spec::new("vl2re32.v", 0xfff0707f, 0x22806007, vec![rs1, vd]),
-    Spec::new("vl2re64.v", 0xfff0707f, 0x22807007, vec![rs1, vd]),
-    Spec::new("vl2re8.v", 0xfff0707f, 0x22800007, vec![rs1, vd]),
-    Spec::new("vl4re16.v", 0xfff0707f, 0x62805007, vec![rs1, vd]),
-    Spec::new("vl4re32.v", 0xfff0707f, 0x62806007, vec![rs1, vd]),
-    Spec::new("vl4re64.v", 0xfff0707f, 0x62807007, vec![rs1, vd]),
-    Spec::new("vl4re8.v", 0xfff0707f, 0x62800007, vec![rs1, vd]),
-    Spec::new("vl8re16.v", 0xfff0707f, 0xe2805007, vec![rs1, vd]),
-    Spec::new("vl8re32.v", 0xfff0707f, 0xe2806007, vec![rs1, vd]),
-    Spec::new("vl8re64.v", 0xfff0707f, 0xe2807007, vec![rs1, vd]),
-    Spec::new("vl8re8.v", 0xfff0707f, 0xe2800007, vec![rs1, vd]),
-    Spec::new("vle16.v", 0xfdf0707f, 0x5007, vec![vm, rs1, vd]),
-    Spec::new("vle16ff.v", 0xfdf0707f, 0x1005007, vec![vm, rs1, vd]),
-    Spec::new("vle32.v", 0xfdf0707f, 0x6007, vec![vm, rs1, vd]),
-    Spec::new("vle32ff.v", 0xfdf0707f, 0x1006007, vec![vm, rs1, vd]),
-    Spec::new("vle64.v", 0xfdf0707f, 0x7007, vec![vm, rs1, vd]),
-    Spec::new("vle64ff.v", 0xfdf0707f, 0x1007007, vec![vm, rs1, vd]),
-    Spec::new("vle8.v", 0xfdf0707f, 0x7, vec![vm, rs1, vd]),
-    Spec::new("vle8ff.v", 0xfdf0707f, 0x1000007, vec![vm, rs1, vd]),
-    Spec::new("vlm.v", 0xfff0707f, 0x2b00007, vec![rs1, vd]),
-    Spec::new("vloxei16.v", 0xfc00707f, 0xc005007, vec![vm, vs2, rs1, vd]),
-    Spec::new("vloxei32.v", 0xfc00707f, 0xc006007, vec![vm, vs2, rs1, vd]),
-    Spec::new("vloxei64.v", 0xfc00707f, 0xc007007, vec![vm, vs2, rs1, vd]),
-    Spec::new("vloxei8.v", 0xfc00707f, 0xc000007, vec![vm, vs2, rs1, vd]),
-    Spec::new("vlse16.v", 0xfc00707f, 0x8005007, vec![vm, rs2, rs1, vd]),
-    Spec::new("vlse32.v", 0xfc00707f, 0x8006007, vec![vm, rs2, rs1, vd]),
-    Spec::new("vlse64.v", 0xfc00707f, 0x8007007, vec![vm, rs2, rs1, vd]),
-    Spec::new("vlse8.v", 0xfc00707f, 0x8000007, vec![vm, rs2, rs1, vd]),
-    Spec::new("vluxei16.v", 0xfc00707f, 0x4005007, vec![vm, vs2, rs1, vd]),
-    Spec::new("vluxei32.v", 0xfc00707f, 0x4006007, vec![vm, vs2, rs1, vd]),
-    Spec::new("vluxei64.v", 0xfc00707f, 0x4007007, vec![vm, vs2, rs1, vd]),
-    Spec::new("vluxei8.v", 0xfc00707f, 0x4000007, vec![vm, vs2, rs1, vd]),
     Spec::new("vmacc.vv", 0xfc00707f, 0xb4002057, vec![vm, vs2, vs1, vd]),
     Spec::new("vmacc.vx", 0xfc00707f, 0xb4006057, vec![vm, vs2, rs1, vd]),
     Spec::new("vmadc.vi", 0xfe00707f, 0x46003057, vec![vs2, simm5, vd]),
@@ -435,10 +514,6 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("vrgatherei16.vv", 0xfc00707f, 0x38000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vrsub.vi", 0xfc00707f, 0xc003057, vec![vm, vs2, simm5, vd]),
     Spec::new("vrsub.vx", 0xfc00707f, 0xc004057, vec![vm, vs2, rs1, vd]),
-    Spec::new("vs1r.v", 0xfff0707f, 0x2800027, vec![rs1, vs3]),
-    Spec::new("vs2r.v", 0xfff0707f, 0x22800027, vec![rs1, vs3]),
-    Spec::new("vs4r.v", 0xfff0707f, 0x62800027, vec![rs1, vs3]),
-    Spec::new("vs8r.v", 0xfff0707f, 0xe2800027, vec![rs1, vs3]),
     Spec::new("vsadd.vi", 0xfc00707f, 0x84003057, vec![vm, vs2, simm5, vd]),
     Spec::new("vsadd.vv", 0xfc00707f, 0x84000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vsadd.vx", 0xfc00707f, 0x84004057, vec![vm, vs2, rs1, vd]),
@@ -447,10 +522,6 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("vsaddu.vx", 0xfc00707f, 0x80004057, vec![vm, vs2, rs1, vd]),
     Spec::new("vsbc.vvm", 0xfe00707f, 0x48000057, vec![vs2, vs1, vd]),
     Spec::new("vsbc.vxm", 0xfe00707f, 0x48004057, vec![vs2, rs1, vd]),
-    Spec::new("vse16.v", 0xfdf0707f, 0x5027, vec![vm, rs1, vs3]),
-    Spec::new("vse32.v", 0xfdf0707f, 0x6027, vec![vm, rs1, vs3]),
-    Spec::new("vse64.v", 0xfdf0707f, 0x7027, vec![vm, rs1, vs3]),
-    Spec::new("vse8.v", 0xfdf0707f, 0x27, vec![vm, rs1, vs3]),
     Spec::new("vsetivli", 0xc000707f, 0xc0007057, vec![zimm10, zimm5, rd]),
     Spec::new("vsetvl", 0xfe00707f, 0x80007057, vec![rs2, rs1, rd]),
     Spec::new("vsetvli", 0x8000707f, 0x7057, vec![zimm11, rs1, rd]),
@@ -466,23 +537,14 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("vsll.vi", 0xfc00707f, 0x94003057, vec![vm, vs2, simm5, vd]),
     Spec::new("vsll.vv", 0xfc00707f, 0x94000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vsll.vx", 0xfc00707f, 0x94004057, vec![vm, vs2, rs1, vd]),
-    Spec::new("vsm.v", 0xfff0707f, 0x2b00027, vec![rs1, vs3]),
     Spec::new("vsmul.vv", 0xfc00707f, 0x9c000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vsmul.vx", 0xfc00707f, 0x9c004057, vec![vm, vs2, rs1, vd]),
-    Spec::new("vsoxei16.v", 0xfc00707f, 0xc005027, vec![vm, vs2, rs1, vs3]),
-    Spec::new("vsoxei32.v", 0xfc00707f, 0xc006027, vec![vm, vs2, rs1, vs3]),
-    Spec::new("vsoxei64.v", 0xfc00707f, 0xc007027, vec![vm, vs2, rs1, vs3]),
-    Spec::new("vsoxei8.v", 0xfc00707f, 0xc000027, vec![vm, vs2, rs1, vs3]),
     Spec::new("vsra.vi", 0xfc00707f, 0xa4003057, vec![vm, vs2, simm5, vd]),
     Spec::new("vsra.vv", 0xfc00707f, 0xa4000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vsra.vx", 0xfc00707f, 0xa4004057, vec![vm, vs2, rs1, vd]),
     Spec::new("vsrl.vi", 0xfc00707f, 0xa0003057, vec![vm, vs2, simm5, vd]),
     Spec::new("vsrl.vv", 0xfc00707f, 0xa0000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vsrl.vx", 0xfc00707f, 0xa0004057, vec![vm, vs2, rs1, vd]),
-    Spec::new("vsse16.v", 0xfc00707f, 0x8005027, vec![vm, rs2, rs1, vs3]),
-    Spec::new("vsse32.v", 0xfc00707f, 0x8006027, vec![vm, rs2, rs1, vs3]),
-    Spec::new("vsse64.v", 0xfc00707f, 0x8007027, vec![vm, rs2, rs1, vs3]),
-    Spec::new("vsse8.v", 0xfc00707f, 0x8000027, vec![vm, rs2, rs1, vs3]),
     Spec::new("vssra.vi", 0xfc00707f, 0xac003057, vec![vm, vs2, simm5, vd]),
     Spec::new("vssra.vv", 0xfc00707f, 0xac000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vssra.vx", 0xfc00707f, 0xac004057, vec![vm, vs2, rs1, vd]),
@@ -495,10 +557,6 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("vssubu.vx", 0xfc00707f, 0x88004057, vec![vm, vs2, rs1, vd]),
     Spec::new("vsub.vv", 0xfc00707f, 0x8000057, vec![vm, vs2, vs1, vd]),
     Spec::new("vsub.vx", 0xfc00707f, 0x8004057, vec![vm, vs2, rs1, vd]),
-    Spec::new("vsuxei16.v", 0xfc00707f, 0x4005027, vec![vm, vs2, rs1, vs3]),
-    Spec::new("vsuxei32.v", 0xfc00707f, 0x4006027, vec![vm, vs2, rs1, vs3]),
-    Spec::new("vsuxei64.v", 0xfc00707f, 0x4007027, vec![vm, vs2, rs1, vs3]),
-    Spec::new("vsuxei8.v", 0xfc00707f, 0x4000027, vec![vm, vs2, rs1, vs3]),
     Spec::new("vwadd.vv", 0xfc00707f, 0xc4002057, vec![vm, vs2, vs1, vd]),
     Spec::new("vwadd.vx", 0xfc00707f, 0xc4006057, vec![vm, vs2, rs1, vd]),
     Spec::new("vwadd.wv", 0xfc00707f, 0xd4002057, vec![vm, vs2, vs1, vd]),
@@ -536,22 +594,65 @@ pub static RV_ISA_SPECS_REGULAR: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("vzext.vf2", 0xfc0ff07f, 0x48032057, vec![vm, vs2, vd]),
     Spec::new("vzext.vf4", 0xfc0ff07f, 0x48022057, vec![vm, vs2, vd]),
     Spec::new("vzext.vf8", 0xfc0ff07f, 0x48012057, vec![vm, vs2, vd]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_63: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("beq", 0x707f, 0x63, vec![bimm12hi, rs1, rs2, bimm12lo]),
+    Spec::new("bge", 0x707f, 0x5063, vec![bimm12hi, rs1, rs2, bimm12lo]),
+    Spec::new("bgeu", 0x707f, 0x7063, vec![bimm12hi, rs1, rs2, bimm12lo]),
+    Spec::new("blt", 0x707f, 0x4063, vec![bimm12hi, rs1, rs2, bimm12lo]),
+    Spec::new("bltu", 0x707f, 0x6063, vec![bimm12hi, rs1, rs2, bimm12lo]),
+    Spec::new("bne", 0x707f, 0x1063, vec![bimm12hi, rs1, rs2, bimm12lo]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_67: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("jalr", 0x707f, 0x67, vec![rd, rs1, imm12]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_6F: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("jal", 0x7f, 0x6f, vec![rd, jimm20]),
+]);
+
+pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_73: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("csrrc", 0x707f, 0x3073, vec![rd, rs1, csr]),
+    Spec::new("csrrci", 0x707f, 0x7073, vec![rd, csr, zimm5]),
+    Spec::new("csrrs", 0x707f, 0x2073, vec![rd, rs1, csr]),
+    Spec::new("csrrsi", 0x707f, 0x6073, vec![rd, csr, zimm5]),
+    Spec::new("csrrw", 0x707f, 0x1073, vec![rd, rs1, csr]),
+    Spec::new("csrrwi", 0x707f, 0x5073, vec![rd, csr, zimm5]),
+    Spec::new("ebreak", 0xffffffff, 0x100073, vec![]),
+    Spec::new("ecall", 0xffffffff, 0x73, vec![]),
+    Spec::new("mret", 0xffffffff, 0x30200073, vec![]),
     Spec::new("wfi", 0xffffffff, 0x10500073, vec![]),
-    Spec::new("xor", 0xfe00707f, 0x4033, vec![rd, rs1, rs2]),
-    Spec::new("xori", 0x707f, 0x4013, vec![rd, rs1, imm12]),
 ]);
 
-pub static RV_ISA_SPECS_32: Lazy<Vec<Spec>> = Lazy::new(|| vec![
-    Spec::new("c.flw", 0xe003, 0x6000, vec![rd_p, rs1_p, c_uimm7lo, c_uimm7hi]),
-    Spec::new("c.flwsp", 0xe003, 0x6002, vec![rd, c_uimm8sphi, c_uimm8splo]),
-    Spec::new("c.fsw", 0xe003, 0xe000, vec![rs1_p, rs2_p, c_uimm7lo, c_uimm7hi]),
-    Spec::new("c.fswsp", 0xe003, 0xe002, vec![c_rs2, c_uimm8sp_s]),
-    Spec::new("c.jal", 0xe003, 0x2001, vec![c_imm12]),
+
+// Full instructions (32-bit) - 32-bit specific grouped by opcode
+
+// Full instructions (32-bit) - 64-bit specific grouped by opcode
+pub static RV_ISA_SPECS_64_FULL_OPCODE_03: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("ld", 0x707f, 0x3003, vec![rd, rs1, imm12]),
+    Spec::new("lwu", 0x707f, 0x6003, vec![rd, rs1, imm12]),
 ]);
 
-pub static RV_ISA_SPECS_64: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+pub static RV_ISA_SPECS_64_FULL_OPCODE_13: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("slli", 0xfc00707f, 0x1013, vec![rd, rs1, shamtd]),
+    Spec::new("srai", 0xfc00707f, 0x40005013, vec![rd, rs1, shamtd]),
+    Spec::new("srli", 0xfc00707f, 0x5013, vec![rd, rs1, shamtd]),
+]);
+
+pub static RV_ISA_SPECS_64_FULL_OPCODE_1B: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("addiw", 0x707f, 0x1b, vec![rd, rs1, imm12]),
-    Spec::new("addw", 0xfe00707f, 0x3b, vec![rd, rs1, rs2]),
+    Spec::new("slliw", 0xfe00707f, 0x101b, vec![rd, rs1, shamtw]),
+    Spec::new("sraiw", 0xfe00707f, 0x4000501b, vec![rd, rs1, shamtw]),
+    Spec::new("srliw", 0xfe00707f, 0x501b, vec![rd, rs1, shamtw]),
+]);
+
+pub static RV_ISA_SPECS_64_FULL_OPCODE_23: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("sd", 0x707f, 0x3023, vec![imm12hi, rs1, rs2, imm12lo]),
+]);
+
+pub static RV_ISA_SPECS_64_FULL_OPCODE_2F: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("amoadd.d", 0xf800707f, 0x302f, vec![rd, rs1, rs2, aq, rl]),
     Spec::new("amoand.d", 0xf800707f, 0x6000302f, vec![rd, rs1, rs2, aq, rl]),
     Spec::new("amomax.d", 0xf800707f, 0xa000302f, vec![rd, rs1, rs2, aq, rl]),
@@ -561,18 +662,24 @@ pub static RV_ISA_SPECS_64: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("amoor.d", 0xf800707f, 0x4000302f, vec![rd, rs1, rs2, aq, rl]),
     Spec::new("amoswap.d", 0xf800707f, 0x800302f, vec![rd, rs1, rs2, aq, rl]),
     Spec::new("amoxor.d", 0xf800707f, 0x2000302f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("c.addiw", 0xe003, 0x2001, vec![rd_n0, rs1_n0, c_imm6lo, c_imm6hi]),
-    Spec::new("c.addw", 0xfc63, 0x9c21, vec![rd_p, rs1_p, rs2_p]),
-    Spec::new("c.ld", 0xe003, 0x6000, vec![rd_p, rs1_p, c_uimm8lo, c_uimm8hi]),
-    Spec::new("c.ldsp", 0xe003, 0x6002, vec![rd_n0, c_uimm9sphi, c_uimm9splo]),
-    Spec::new("c.sd", 0xe003, 0xe000, vec![rs1_p, rs2_p, c_uimm8hi, c_uimm8lo]),
-    Spec::new("c.sdsp", 0xe003, 0xe002, vec![c_rs2, c_uimm9sp_s]),
-    Spec::new("c.slli", 0xe003, 0x2, vec![rd_n0, rs1_n0, c_nzuimm6hi, c_nzuimm6lo]),
-    Spec::new("c.srai", 0xec03, 0x8401, vec![rd_p, rs1_p, c_nzuimm6lo, c_nzuimm6hi]),
-    Spec::new("c.srli", 0xec03, 0x8001, vec![rd_p, rs1_p, c_nzuimm6lo, c_nzuimm6hi]),
-    Spec::new("c.subw", 0xfc63, 0x9c01, vec![rd_p, rs1_p, rs2_p]),
+    Spec::new("lr.d", 0xf9f0707f, 0x1000302f, vec![rd, rs1, aq, rl]),
+    Spec::new("sc.d", 0xf800707f, 0x1800302f, vec![rd, rs1, rs2, aq, rl]),
+]);
+
+pub static RV_ISA_SPECS_64_FULL_OPCODE_3B: Lazy<Vec<Spec>> = Lazy::new(|| vec![
+    Spec::new("addw", 0xfe00707f, 0x3b, vec![rd, rs1, rs2]),
     Spec::new("divuw", 0xfe00707f, 0x200503b, vec![rd, rs1, rs2]),
     Spec::new("divw", 0xfe00707f, 0x200403b, vec![rd, rs1, rs2]),
+    Spec::new("mulw", 0xfe00707f, 0x200003b, vec![rd, rs1, rs2]),
+    Spec::new("remuw", 0xfe00707f, 0x200703b, vec![rd, rs1, rs2]),
+    Spec::new("remw", 0xfe00707f, 0x200603b, vec![rd, rs1, rs2]),
+    Spec::new("sllw", 0xfe00707f, 0x103b, vec![rd, rs1, rs2]),
+    Spec::new("sraw", 0xfe00707f, 0x4000503b, vec![rd, rs1, rs2]),
+    Spec::new("srlw", 0xfe00707f, 0x503b, vec![rd, rs1, rs2]),
+    Spec::new("subw", 0xfe00707f, 0x4000003b, vec![rd, rs1, rs2]),
+]);
+
+pub static RV_ISA_SPECS_64_FULL_OPCODE_53: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("fcvt.d.l", 0xfff0007f, 0xd2200053, vec![rd, rs1, rm]),
     Spec::new("fcvt.d.lu", 0xfff0007f, 0xd2300053, vec![rd, rs1, rm]),
     Spec::new("fcvt.l.d", 0xfff0007f, 0xc2200053, vec![rd, rs1, rm]),
@@ -583,23 +690,58 @@ pub static RV_ISA_SPECS_64: Lazy<Vec<Spec>> = Lazy::new(|| vec![
     Spec::new("fcvt.s.lu", 0xfff0007f, 0xd0300053, vec![rd, rs1, rm]),
     Spec::new("fmv.d.x", 0xfff0707f, 0xf2000053, vec![rd, rs1]),
     Spec::new("fmv.x.d", 0xfff0707f, 0xe2000053, vec![rd, rs1]),
-    Spec::new("ld", 0x707f, 0x3003, vec![rd, rs1, imm12]),
-    Spec::new("lr.d", 0xf9f0707f, 0x1000302f, vec![rd, rs1, aq, rl]),
-    Spec::new("lwu", 0x707f, 0x6003, vec![rd, rs1, imm12]),
-    Spec::new("mulw", 0xfe00707f, 0x200003b, vec![rd, rs1, rs2]),
-    Spec::new("remuw", 0xfe00707f, 0x200703b, vec![rd, rs1, rs2]),
-    Spec::new("remw", 0xfe00707f, 0x200603b, vec![rd, rs1, rs2]),
-    Spec::new("sc.d", 0xf800707f, 0x1800302f, vec![rd, rs1, rs2, aq, rl]),
-    Spec::new("sd", 0x707f, 0x3023, vec![imm12hi, rs1, rs2, imm12lo]),
-    Spec::new("slli", 0xfc00707f, 0x1013, vec![rd, rs1, shamtd]),
-    Spec::new("slliw", 0xfe00707f, 0x101b, vec![rd, rs1, shamtw]),
-    Spec::new("sllw", 0xfe00707f, 0x103b, vec![rd, rs1, rs2]),
-    Spec::new("srai", 0xfc00707f, 0x40005013, vec![rd, rs1, shamtd]),
-    Spec::new("sraiw", 0xfe00707f, 0x4000501b, vec![rd, rs1, shamtw]),
-    Spec::new("sraw", 0xfe00707f, 0x4000503b, vec![rd, rs1, rs2]),
-    Spec::new("srli", 0xfc00707f, 0x5013, vec![rd, rs1, shamtd]),
-    Spec::new("srliw", 0xfe00707f, 0x501b, vec![rd, rs1, shamtw]),
-    Spec::new("srlw", 0xfe00707f, 0x503b, vec![rd, rs1, rs2]),
-    Spec::new("subw", 0xfe00707f, 0x4000003b, vec![rd, rs1, rs2]),
 ]);
+
+
+
+
+// Opcode lookup API - dynamically generated lookup functions
+
+/// Get generic full instruction specs by opcode
+pub fn get_generic_full_specs_by_opcode(opcode: u8) -> Option<&'static Lazy<Vec<Spec>>> {
+    match opcode {
+        0x3 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_03),
+        0x7 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_07),
+        0xf => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_0F),
+        0x13 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_13),
+        0x17 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_17),
+        0x23 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_23),
+        0x27 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_27),
+        0x2f => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_2F),
+        0x33 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_33),
+        0x37 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_37),
+        0x43 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_43),
+        0x47 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_47),
+        0x4b => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_4B),
+        0x4f => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_4F),
+        0x53 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_53),
+        0x57 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_57),
+        0x63 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_63),
+        0x67 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_67),
+        0x6f => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_6F),
+        0x73 => Some(&RV_ISA_SPECS_GENERIC_FULL_OPCODE_73),
+        _ => None,
+    }
+}
+
+/// Get 32-bit specific full instruction specs by opcode
+pub fn get_32_full_specs_by_opcode(opcode: u8) -> Option<&'static Lazy<Vec<Spec>>> {
+    match opcode {
+        _ => None,
+    }
+}
+
+/// Get 64-bit specific full instruction specs by opcode
+pub fn get_64_full_specs_by_opcode(opcode: u8) -> Option<&'static Lazy<Vec<Spec>>> {
+    match opcode {
+        0x3 => Some(&RV_ISA_SPECS_64_FULL_OPCODE_03),
+        0x13 => Some(&RV_ISA_SPECS_64_FULL_OPCODE_13),
+        0x1b => Some(&RV_ISA_SPECS_64_FULL_OPCODE_1B),
+        0x23 => Some(&RV_ISA_SPECS_64_FULL_OPCODE_23),
+        0x2f => Some(&RV_ISA_SPECS_64_FULL_OPCODE_2F),
+        0x3b => Some(&RV_ISA_SPECS_64_FULL_OPCODE_3B),
+        0x53 => Some(&RV_ISA_SPECS_64_FULL_OPCODE_53),
+        _ => None,
+    }
+}
 

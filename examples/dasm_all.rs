@@ -1,54 +1,69 @@
 use rvdasm::disassembler::*;
-use std::fs::File;
-use std::io::Read;
-use object::{Object, ObjectSection};
 use clap::Parser;
+use std::fs;
+use regex::Regex;
+
+// Just like spike-dasm.cc,
+// This little program finds occurrences of strings like
+//  DASM(ffabc013)
+// in its input, then replaces them with the disassembly
+// enclosed hexadecimal number, interpreted as a RISC-V
+// instruction.
 
 #[derive(Parser)]
 struct Args {
     #[clap(short, long)]
-    file: String,
-    #[clap(short, long, default_value = "false")]
-    canonical: bool,
+    input_file_path: String,
+		#[clap(short, long, default_value = "false")]
+		canonical: bool,
+		#[clap(short, long, default_value = "64")]
+		xlen: String,
+		#[clap(short, long)]
+		output_file_path: String,
 }
 
 fn main() {
-    let args = Args::parse();
-    let mut elf_file = File::open(args.file.clone()).unwrap();
-    let mut elf_buffer = Vec::new();
-    elf_file.read_to_end(&mut elf_buffer).unwrap();
-    let elf = object::File::parse(&*elf_buffer).unwrap();
+	let args = Args::parse();
+	// read the file into lines
+	let file_content = fs::read_to_string(args.input_file_path).unwrap();
+	let lines: Vec<&str> = file_content.lines().collect();
+	let xlen = match args.xlen.as_str() {
+		"32" => Xlen::XLEN32,
+		"64" => Xlen::XLEN64,
+		_ => panic!("Invalid xlen: {}", args.xlen),
+	};
+	let disassembler = Disassembler::new(xlen);
 
-    let elf_arch = elf.architecture();
-    // elf.architecture() == object::Architecture::Riscv64
-    let xlen = if elf_arch == object::Architecture::Riscv64 {
-        Xlen::XLEN64
-    } else if elf_arch == object::Architecture::Riscv32 {
-        Xlen::XLEN32
-    } else {
-        panic!("Unsupported architecture: {:?}", elf_arch);
-    };
-    let disassembler = Disassembler::new(xlen);
-
-    let text_section = elf.section_by_name(".text").unwrap();
-    let text_data = text_section.data().unwrap();
-    let entry_point = elf.entry();
-
-    println!("entry point: 0x{:08x}", entry_point);
-
-    let decoded_insns = disassembler.disassemble_all(&text_data, entry_point);
-
-    // sort keys by address 
-    let mut keys: Vec<u64> = decoded_insns.keys().cloned().collect();
-    keys.sort();
-    
-    // write to file with extension .dump
-    // let mut dump_file = File::create(format!("{}.dump", args.file)).unwrap();
-    for key in keys {
-        if args.canonical {
-            println!("{}", decoded_insns[&key].to_canonical());
-        } else {
-            println!("0x{:08x}: {:08x}     {}", key, decoded_insns[&key].get_raw(), decoded_insns[&key].to_string());
-        }
-    }
+	// Create a vector to hold modified lines
+	let mut modified_lines = Vec::new();
+	
+	// Process each line, replacing DASM patterns with disassembly
+	for line in lines {
+		let pattern = Regex::new(r"DASM\((0x[0-9a-fA-F]+)\)").unwrap();
+		let modified_line = pattern.replace_all(line, |caps: &regex::Captures| {
+			let hex_str = &caps[1];
+			let hex = u32::from_str_radix(hex_str.trim_start_matches("0x"), 16).unwrap();
+			match disassembler.disassmeble_one(hex) {
+				Some(insn) => {
+					if args.canonical {
+						insn.to_canonical()
+					} else {
+						insn.to_string()
+					}
+				},
+				None => {
+					format!("<unknown instruction: {:#010x}>", hex)
+				}
+			}
+		});
+		modified_lines.push(modified_line.to_string());
+	}
+	
+	if args.output_file_path.is_empty() {
+		// Print all modified content
+		println!("{}", modified_lines.join("\n"));
+	} else {
+		// Print all modified content
+		fs::write(args.output_file_path, modified_lines.join("\n")).unwrap();
+	}
 }
