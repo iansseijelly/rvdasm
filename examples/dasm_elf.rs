@@ -32,7 +32,7 @@ fn main() {
 
     let text_section = elf.section_by_name(".text").unwrap();
     let text_data = text_section.data().unwrap();
-    let entry_point = elf.entry();
+    let entry_point = text_section.address();
 
     println!("entry point: 0x{:08x}", entry_point);
 
