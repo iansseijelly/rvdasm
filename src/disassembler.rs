@@ -2,7 +2,6 @@ use crate::args::*;
 use crate::insn::*;
 use crate::isa::*;
 use std::collections::HashMap;
-use std::io::Write;
 
 /// Helper: Check if the instruction is RVC
 pub fn is_compressed_byte(byte: u8) -> bool { byte & 0x03 < 0x03 }
