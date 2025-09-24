@@ -1,4 +1,5 @@
-#[derive(Debug, Clone)]
+use serde::{Serialize, Deserialize};
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Arg {
     DstReg(u32),
     SrcReg(u32),

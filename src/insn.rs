@@ -1,5 +1,6 @@
 use crate::args::Arg;
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 
 const BRANCH_OPCODES: &[&str] = &["beq", "bge", "bgeu", "blt", "bltu", "bne", "beqz", "bnez",
                                 "bgez", "blez", "bltz", "bgtz", "bgt", "ble", "bgtu", "bleu",
@@ -7,7 +8,7 @@ const BRANCH_OPCODES: &[&str] = &["beq", "bge", "bgeu", "blt", "bltu", "bne", "b
 const IJ_OPCODES: &[&str] = &["jal", "j", "call", "tail", "c.j", "c.jal"];
 const UJ_OPCODES: &[&str] = &["jalr", "jr", "c.jr", "c.jalr", "ret"];
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Insn {
     pub raw: u32,
     pub name: String,

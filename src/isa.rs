@@ -623,6 +623,8 @@ pub static RV_ISA_SPECS_GENERIC_FULL_OPCODE_73: Lazy<Vec<Spec>> = Lazy::new(|| v
     Spec::new("ebreak", 0xffffffff, 0x100073, vec![]),
     Spec::new("ecall", 0xffffffff, 0x73, vec![]),
     Spec::new("mret", 0xffffffff, 0x30200073, vec![]),
+    Spec::new("sfence.vma", 0xfe007fff, 0x12000073, vec![rs1, rs2]),
+    Spec::new("sret", 0xffffffff, 0x10200073, vec![]),
     Spec::new("wfi", 0xffffffff, 0x10500073, vec![]),
 ]);
 
