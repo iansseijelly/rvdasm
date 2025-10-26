@@ -8,19 +8,25 @@ const BRANCH_OPCODES: &[&str] = &["beq", "bge", "bgeu", "blt", "bltu", "bne", "b
 const IJ_OPCODES: &[&str] = &["jal", "j", "call", "tail", "c.j", "c.jal"];
 const UJ_OPCODES: &[&str] = &["jalr", "jr", "c.jr", "c.jalr", "ret"];
 
+const BRANCH_MASK: u8 = 0x01;
+const BRANCH_OFFSET: u8 = 0;
+const IJ_MASK: u8 = 0x02;
+const IJ_OFFSET: u8 = 1;
+const UJ_MASK: u8 = 0x04;
+const UJ_OFFSET: u8 = 2;
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Insn {
+    pub len: u32, 
+    pub imm: Option<Arg>,
+    pub kind_mask: u8,
     pub raw: u32,
     pub name: String,
-    pub len: u32, 
     pub src: HashMap<String, Arg>,
-    pub imm: Option<Arg>,
     pub dst: HashMap<String, Arg>,
     pub flags: HashMap<String, Arg>,
     pub csr: Option<Arg>,
-    pub is_branch: bool,
-    pub is_direct_jump: bool,
-    pub is_indirect_jump: bool,
 }
 
 /// Helper: Get the size of the instruction in bytes
@@ -41,7 +47,8 @@ impl Insn {
         let is_branch = BRANCH_OPCODES.contains(&name);
         let is_direct_jump = IJ_OPCODES.contains(&name);
         let is_indirect_jump = UJ_OPCODES.contains(&name);
-        Self { raw, name: name.to_string(), len: get_insn_size(raw), src, imm, dst, flags, csr, is_branch, is_direct_jump, is_indirect_jump }
+        let kind_mask = (is_branch as u8) | ((is_direct_jump as u8) << IJ_OFFSET) | ((is_indirect_jump as u8) << UJ_OFFSET);
+        Self { len: get_insn_size(raw), imm, kind_mask, raw, name: name.to_string(), src, dst, flags, csr }
     }
 
     pub fn get_len(&self) -> u32 {
@@ -69,15 +76,15 @@ impl Insn {
     }
 
     pub fn is_branch(&self) -> bool {
-        self.is_branch
+        self.kind_mask & BRANCH_MASK != 0
     }
 
     pub fn is_direct_jump(&self) -> bool {
-        self.is_direct_jump
+        self.kind_mask & IJ_MASK != 0
     }
 
     pub fn is_indirect_jump(&self) -> bool {
-        self.is_indirect_jump
+        self.kind_mask & UJ_MASK != 0
     }
 
     /// Helper: Format the instruction to a string representation
