@@ -18,6 +18,9 @@ pub struct Insn {
     pub dst: HashMap<String, Arg>,
     pub flags: HashMap<String, Arg>,
     pub csr: Option<Arg>,
+    pub is_branch: bool,
+    pub is_direct_jump: bool,
+    pub is_indirect_jump: bool,
 }
 
 /// Helper: Get the size of the instruction in bytes
@@ -35,7 +38,10 @@ fn tag_to_string(tag: &str) -> String {
 
 impl Insn {
     pub fn new(raw: u32, name: &str, src: HashMap<String, Arg>, imm: Option<Arg>, dst: HashMap<String, Arg>, flags: HashMap<String, Arg>, csr: Option<Arg>) -> Self {
-        Self { raw, name: name.to_string(), len: get_insn_size(raw), src, imm, dst, flags, csr }
+        let is_branch = BRANCH_OPCODES.contains(&name);
+        let is_direct_jump = IJ_OPCODES.contains(&name);
+        let is_indirect_jump = UJ_OPCODES.contains(&name);
+        Self { raw, name: name.to_string(), len: get_insn_size(raw), src, imm, dst, flags, csr, is_branch, is_direct_jump, is_indirect_jump }
     }
 
     pub fn get_len(&self) -> u32 {
@@ -63,15 +69,15 @@ impl Insn {
     }
 
     pub fn is_branch(&self) -> bool {
-        BRANCH_OPCODES.contains(&self.name.as_str())
+        self.is_branch
     }
 
     pub fn is_direct_jump(&self) -> bool {
-        IJ_OPCODES.contains(&self.name.as_str())
+        self.is_direct_jump
     }
 
     pub fn is_indirect_jump(&self) -> bool {
-        UJ_OPCODES.contains(&self.name.as_str())
+        self.is_indirect_jump
     }
 
     /// Helper: Format the instruction to a string representation
