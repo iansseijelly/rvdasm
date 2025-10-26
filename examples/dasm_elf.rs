@@ -1,8 +1,8 @@
+use clap::Parser;
+use object::{Object, ObjectSection};
 use rvdasm::disassembler::*;
 use std::fs::File;
 use std::io::Read;
-use object::{Object, ObjectSection};
-use clap::Parser;
 
 #[derive(Parser)]
 struct Args {
@@ -38,17 +38,22 @@ fn main() {
 
     let decoded_insns = disassembler.disassemble_all(&text_data, entry_point);
 
-    // sort keys by address 
+    // sort keys by address
     let mut keys: Vec<u64> = decoded_insns.keys().cloned().collect();
     keys.sort();
-    
+
     // write to file with extension .dump
     // let mut dump_file = File::create(format!("{}.dump", args.file)).unwrap();
     for key in keys {
         if args.canonical {
             println!("{}", decoded_insns[&key].to_canonical());
         } else {
-            println!("0x{:08x}: {:08x}     {}", key, decoded_insns[&key].get_raw(), decoded_insns[&key].to_string());
+            println!(
+                "0x{:08x}: {:08x}     {}",
+                key,
+                decoded_insns[&key].get_raw(),
+                decoded_insns[&key].to_string()
+            );
         }
     }
 }

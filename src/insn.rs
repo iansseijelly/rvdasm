@@ -1,10 +1,11 @@
 use crate::args::Arg;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
-const BRANCH_OPCODES: &[&str] = &["beq", "bge", "bgeu", "blt", "bltu", "bne", "beqz", "bnez",
-                                "bgez", "blez", "bltz", "bgtz", "bgt", "ble", "bgtu", "bleu",
-                                "c.beqz", "c.bnez", "c.bltz", "c.bgez"];
+const BRANCH_OPCODES: &[&str] = &[
+    "beq", "bge", "bgeu", "blt", "bltu", "bne", "beqz", "bnez", "bgez", "blez", "bltz", "bgtz",
+    "bgt", "ble", "bgtu", "bleu", "c.beqz", "c.bnez", "c.bltz", "c.bgez",
+];
 const IJ_OPCODES: &[&str] = &["jal", "j", "call", "tail", "c.j", "c.jal"];
 const UJ_OPCODES: &[&str] = &["jalr", "jr", "c.jr", "c.jalr", "ret"];
 
@@ -15,22 +16,29 @@ const IJ_OFFSET: u8 = 1;
 const UJ_MASK: u8 = 0x04;
 const UJ_OFFSET: u8 = 2;
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Insn {
-    pub len: u32, 
+pub struct InsnArgs {
     pub imm: Option<Arg>,
-    pub kind_mask: u8,
-    pub raw: u32,
-    pub name: String,
     pub src: HashMap<String, Arg>,
     pub dst: HashMap<String, Arg>,
     pub flags: HashMap<String, Arg>,
     pub csr: Option<Arg>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Insn {
+    pub len: u8,
+    pub kind_mask: u8,
+    pub offset: i32,
+    pub raw: u32,
+    pub name: String,
+    pub args: Box<InsnArgs>,
+}
+
 /// Helper: Get the size of the instruction in bytes
-fn get_insn_size(raw: u32) -> u32 { if ((raw) & 0x03) < 0x03 { 2 } else { 4 }}
+fn get_insn_size(raw: u32) -> u8 {
+    if ((raw) & 0x03) < 0x03 { 2 } else { 4 }
+}
 
 /// Helper: Convert a tag to a string
 fn tag_to_string(tag: &str) -> String {
@@ -43,15 +51,46 @@ fn tag_to_string(tag: &str) -> String {
 }
 
 impl Insn {
-    pub fn new(raw: u32, name: &str, src: HashMap<String, Arg>, imm: Option<Arg>, dst: HashMap<String, Arg>, flags: HashMap<String, Arg>, csr: Option<Arg>) -> Self {
+    pub fn new(
+        raw: u32,
+        name: &str,
+        src: HashMap<String, Arg>,
+        imm: Option<Arg>,
+        dst: HashMap<String, Arg>,
+        flags: HashMap<String, Arg>,
+        csr: Option<Arg>,
+    ) -> Self {
+        
+        let offset = match imm {
+            Some(imm) => imm.get_val_signed_imm(),
+            None => 0,
+        };
+
         let is_branch = BRANCH_OPCODES.contains(&name);
         let is_direct_jump = IJ_OPCODES.contains(&name);
         let is_indirect_jump = UJ_OPCODES.contains(&name);
-        let kind_mask = (is_branch as u8) | ((is_direct_jump as u8) << IJ_OFFSET) | ((is_indirect_jump as u8) << UJ_OFFSET);
-        Self { len: get_insn_size(raw), imm, kind_mask, raw, name: name.to_string(), src, dst, flags, csr }
+        let kind_mask = (is_branch as u8)
+            | ((is_direct_jump as u8) << IJ_OFFSET)
+            | ((is_indirect_jump as u8) << UJ_OFFSET);
+        
+        let args = InsnArgs {
+            imm,
+            src,
+            dst,
+            flags,
+            csr,
+        };
+        Self {
+            len: get_insn_size(raw),
+            offset,
+            kind_mask,
+            raw,
+            name: name.to_string(),
+            args: Box::new(args),
+        }
     }
 
-    pub fn get_len(&self) -> u32 {
+    pub fn get_len(&self) -> u8 {
         self.len
     }
 
@@ -64,15 +103,15 @@ impl Insn {
     }
 
     pub fn get_src(&self) -> HashMap<String, Arg> {
-        self.src.clone()
+        self.args.src.clone()
     }
 
     pub fn get_imm(&self) -> Option<Arg> {
-        self.imm.clone()
+        self.args.imm.clone()
     }
 
     pub fn get_dst(&self) -> HashMap<String, Arg> {
-        self.dst.clone()
+        self.args.dst.clone()
     }
 
     pub fn is_branch(&self) -> bool {
@@ -91,38 +130,42 @@ impl Insn {
     pub fn to_string(&self) -> String {
         // Format the instruction name
         let mut parts = vec![self.name.clone()];
-        
+
         // TODO: add flags
         // Collect all operand parts
         let mut operands = Vec::new();
-        
+
         // Add dst args
-        for (k, v) in &self.dst {
+        for (k, v) in &self.args.dst {
             operands.push(format!("{}{}", tag_to_string(k), v.to_string()));
         }
-        
+
         // Add src args - sort by tag, not by value
-        let mut src_tags = self.src.keys().collect::<Vec<&String>>();   
+        let mut src_tags = self.args.src.keys().collect::<Vec<&String>>();
         src_tags.sort();
         for tag in src_tags {
-            operands.push(format!("{}{}", tag_to_string(tag), self.src[tag].to_string()));
+            operands.push(format!(
+                "{}{}",
+                tag_to_string(tag),
+                self.args.src[tag].to_string()
+            ));
         }
-        
+
         // Add imm arg
-        if let Some(imm) = &self.imm {
+        if let Some(imm) = &self.args.imm {
             operands.push(imm.to_string());
         }
-        
+
         // Add csr arg
-        if let Some(csr) = &self.csr {
+        if let Some(csr) = &self.args.csr {
             operands.push(format!("CSR#{}", csr.to_string()));
         }
-        
+
         // Join all operands with commas
         if !operands.is_empty() {
             parts.push(operands.join(", "));
         }
-        
+
         // Join instruction name and operands with space
         parts.join(" ")
     }
@@ -134,36 +177,46 @@ impl Insn {
 
         // Collect all operand parts
         let mut operands = Vec::new();
-        
+
         // Add dst args
-        for (k, v) in &self.dst {
-            operands.push(format!("{} {}{}", k.to_uppercase(), tag_to_string(k), v.to_string()));
+        for (k, v) in &self.args.dst {
+            operands.push(format!(
+                "{} {}{}",
+                k.to_uppercase(),
+                tag_to_string(k),
+                v.to_string()
+            ));
         }
-        
+
         // Add src args - sort by tag
-        let mut src_tags = self.src.keys().collect::<Vec<&String>>();   
+        let mut src_tags = self.args.src.keys().collect::<Vec<&String>>();
         src_tags.sort();
         for tag in src_tags {
-            operands.push(format!("{} {}{}", tag.to_uppercase(), tag_to_string(tag), self.src[tag].to_string()));
+            operands.push(format!(
+                "{} {}{}",
+                tag.to_uppercase(),
+                tag_to_string(tag),
+                self.args.src[tag].to_string()
+            ));
         }
-        
+
         // Add imm arg
-        if let Some(imm) = &self.imm {
+        if let Some(imm) = &self.args.imm {
             operands.push(format!("{} {}", "IMM", imm.to_string()));
         }
-        
+
         // Add csr arg
-        if let Some(csr) = &self.csr {
+        if let Some(csr) = &self.args.csr {
             operands.push(format!("{} {}", "CSR", csr.to_string()));
         }
 
         // TODO: add flags
-        
+
         // Join all operands with commas
         if !operands.is_empty() {
             parts.push(operands.join(" "));
         }
-        
+
         // Join instruction name and operands with space
         parts.join(" ")
     }

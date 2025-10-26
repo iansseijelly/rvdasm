@@ -4,10 +4,16 @@ use crate::isa::*;
 use std::collections::HashMap;
 
 /// Helper: Check if the instruction is RVC
-pub fn is_compressed_byte(byte: u8) -> bool { byte & 0x03 < 0x03 }
+pub fn is_compressed_byte(byte: u8) -> bool {
+    byte & 0x03 < 0x03
+}
 
-pub fn is_compressed(code: u32) -> bool { code & 0x03 < 0x03 }
-pub fn get_opcode(code: u32) -> u8 { (code & 0x7f) as u8 }
+pub fn is_compressed(code: u32) -> bool {
+    code & 0x03 < 0x03
+}
+pub fn get_opcode(code: u32) -> u8 {
+    (code & 0x7f) as u8
+}
 
 pub enum Xlen {
     XLEN32,
@@ -20,7 +26,7 @@ pub struct Disassembler {
 
 impl Disassembler {
     pub fn new(xlen: Xlen) -> Self {
-        Self{ xlen }
+        Self { xlen }
     }
 
     pub fn extract_from_mask_match(&self, spec: &Spec, code: u32) -> Option<Insn> {
@@ -56,7 +62,7 @@ impl Disassembler {
     }
 
     /// Disassemble a single instruction
-    pub fn disassmeble_one(&self, code: u32) -> Option<Insn> { 
+    pub fn disassmeble_one(&self, code: u32) -> Option<Insn> {
         // iterator over all isa specs
         // first, check if the instruction is compressed
         if is_compressed(code) {
@@ -64,7 +70,11 @@ impl Disassembler {
             for spec in RV_ISA_SPECS_GENERIC_COMPRESSED.iter() {
                 if spec.compare(code) {
                     let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() { return result; } else { continue; }
+                    if result.is_some() {
+                        return result;
+                    } else {
+                        continue;
+                    }
                 }
             }
             // iterate over xlen compressed specs
@@ -75,7 +85,11 @@ impl Disassembler {
             for spec in xlen_specs.iter() {
                 if spec.compare(code) {
                     let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() { return result; } else { continue; }
+                    if result.is_some() {
+                        return result;
+                    } else {
+                        continue;
+                    }
                 }
             }
             return None;
@@ -87,7 +101,11 @@ impl Disassembler {
             for spec in spec.unwrap().iter() {
                 if spec.compare(code) {
                     let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() { return result; } else { continue; }
+                    if result.is_some() {
+                        return result;
+                    } else {
+                        continue;
+                    }
                 }
             }
         }
@@ -99,7 +117,11 @@ impl Disassembler {
             for spec in xlen_specs.unwrap().iter() {
                 if spec.compare(code) {
                     let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() { return result; } else { continue; }
+                    if result.is_some() {
+                        return result;
+                    } else {
+                        continue;
+                    }
                 }
             }
         }
@@ -107,26 +129,37 @@ impl Disassembler {
     }
 
     /// Disassemble a single instruction from a string
-    pub fn disassemble_from_str(&self, code: &str) -> Option<Insn> { 
+    pub fn disassemble_from_str(&self, code: &str) -> Option<Insn> {
         let code = u32::from_str_radix(code, 16).unwrap();
         self.disassmeble_one(code)
     }
 
     /// Disassemble all instructions in a chunk of binary
-    pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<u64, Insn> { 
+    pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<u64, Insn> {
         let mut insns = HashMap::new();
         let mut i = 0;
         while i < code.len() {
             let code_u32;
             let is_compressed = is_compressed_byte(code[i]);
             if is_compressed {
-                code_u32 = u32::from_le_bytes([code[i], code[i+1], 0 as u8, 0 as u8]);
+                code_u32 = u32::from_le_bytes([code[i], code[i + 1], 0 as u8, 0 as u8]);
             } else {
-                code_u32 = u32::from_le_bytes([code[i], code[i+1], code[i+2], code[i+3]]);
+                code_u32 = u32::from_le_bytes([code[i], code[i + 1], code[i + 2], code[i + 3]]);
             }
             let insn_opt = self.disassmeble_one(code_u32);
-            if insn_opt.is_none() { 
-                insns.insert(i as u64 + entry_point, Insn::new(code_u32, "unknown", HashMap::new(), None, HashMap::new(), HashMap::new(), None));
+            if insn_opt.is_none() {
+                insns.insert(
+                    i as u64 + entry_point,
+                    Insn::new(
+                        code_u32,
+                        "unknown",
+                        HashMap::new(),
+                        None,
+                        HashMap::new(),
+                        HashMap::new(),
+                        None,
+                    ),
+                );
                 i += if is_compressed { 2 } else { 4 };
                 continue;
             }
