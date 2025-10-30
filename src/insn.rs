@@ -15,6 +15,7 @@ const IJ_MASK: u8 = 0x02;
 const IJ_OFFSET: u8 = 1;
 const UJ_MASK: u8 = 0x04;
 const UJ_OFFSET: u8 = 2;
+const CFC_MASK: u8 = 0x07; //0b111
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InsnArgs {
@@ -124,6 +125,10 @@ impl Insn {
 
     pub fn is_indirect_jump(&self) -> bool {
         self.kind_mask & UJ_MASK != 0
+    }
+
+    pub fn is_cfc_insn(&self) -> bool {
+        self.kind_mask & CFC_MASK != 0
     }
 
     /// Helper: Format the instruction to a string representation
