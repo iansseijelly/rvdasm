@@ -30,35 +30,23 @@ impl Disassembler {
     }
 
     pub fn extract_from_mask_match(&self, spec: &Spec, code: u32) -> Option<Insn> {
-        // call the args function to get the arguments
-        let args: Vec<(Arg, String)> = spec.args.iter().map(|arg| arg(code)).collect();
-        // iterate over the args and check for Args::Error
-        let valid = args.iter().all(|(arg, _)| !arg.is_error());
-        if !valid {
-            return None;
-        } else {
-            // iterate over the args and check for Args::Error
-            let mut src_args = HashMap::new();
-            let mut dst_args = HashMap::new();
-            let mut flags = HashMap::new();
-            let mut imm = None;
-            let mut csr = None;
-            for (arg, tag) in args {
-                if arg.is_src() {
-                    src_args.insert(tag, arg);
-                } else if arg.is_imm() {
-                    imm = Some(arg);
-                } else if arg.is_dst() {
-                    dst_args.insert(tag, arg);
-                } else if arg.is_flag() {
-                    flags.insert(tag, arg);
-                } else if arg.is_csr() {
-                    csr = Some(arg);
-                }
+        // Evaluate the spec's operand extractors into a fixed buffer. Any extractor
+        // reporting Arg::Error means the encoding is not this instruction after all.
+        let mut ops = [(Arg::Nothing, Tag::None); MAX_ARGS];
+        let mut n = 0;
+        for extract in spec.args.iter() {
+            let (arg, tag) = extract(code);
+            if arg.is_error() {
+                return None;
             }
-            let insn = Insn::new(code, &spec.name, src_args, imm, dst_args, flags, csr);
-            return Some(insn);
+            if matches!(arg, Arg::Nothing) {
+                continue;
+            }
+            assert!(n < MAX_ARGS, "spec {} lists more than {} operands", spec.name, MAX_ARGS);
+            ops[n] = (arg, tag);
+            n += 1;
         }
+        Some(Insn::new(code, spec.name, &ops[..n]))
     }
 
     /// Disassemble a single instruction
@@ -134,40 +122,41 @@ impl Disassembler {
         self.disassmeble_one(code)
     }
 
-    /// Disassemble all instructions in a chunk of binary
-    pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<u64, Insn> {
-        let mut insns = HashMap::new();
+    /// Disassemble every instruction in a code blob, handing each (address, insn)
+    /// to `sink` in address order. Undecodable encodings become an "unknown" insn
+    /// of the length their low bits imply, so the walk never desynchronises.
+    ///
+    /// This is the allocation-free primitive: a caller indexing a large binary
+    /// inserts straight into its own map instead of receiving a temporary one.
+    pub fn disassemble_each(&self, code: &[u8], entry_point: u64, mut sink: impl FnMut(u64, Insn)) {
         let mut i = 0;
         while i < code.len() {
-            let code_u32;
             let is_compressed = is_compressed_byte(code[i]);
-            if is_compressed {
-                code_u32 = u32::from_le_bytes([code[i], code[i + 1], 0 as u8, 0 as u8]);
+            let code_u32 = if is_compressed {
+                u32::from_le_bytes([code[i], code[i + 1], 0, 0])
             } else {
-                code_u32 = u32::from_le_bytes([code[i], code[i + 1], code[i + 2], code[i + 3]]);
+                u32::from_le_bytes([code[i], code[i + 1], code[i + 2], code[i + 3]])
+            };
+            let addr = i as u64 + entry_point;
+            match self.disassmeble_one(code_u32) {
+                Some(insn) => {
+                    i += insn.get_len() as usize;
+                    sink(addr, insn);
+                }
+                None => {
+                    i += if is_compressed { 2 } else { 4 };
+                    sink(addr, Insn::new(code_u32, "unknown", &[]));
+                }
             }
-            let insn_opt = self.disassmeble_one(code_u32);
-            if insn_opt.is_none() {
-                insns.insert(
-                    i as u64 + entry_point,
-                    Insn::new(
-                        code_u32,
-                        "unknown",
-                        HashMap::new(),
-                        None,
-                        HashMap::new(),
-                        HashMap::new(),
-                        None,
-                    ),
-                );
-                i += if is_compressed { 2 } else { 4 };
-                continue;
-            }
-            let insn = insn_opt.unwrap();
-            let insn_len = insn.get_len() as usize;
-            insns.insert(i as u64 + entry_point, insn);
-            i += insn_len;
         }
+    }
+
+    /// Disassemble all instructions in a chunk of binary into a map keyed by address.
+    pub fn disassemble_all(&self, code: &[u8], entry_point: u64) -> HashMap<u64, Insn> {
+        let mut insns = HashMap::with_capacity(code.len() / 2);
+        self.disassemble_each(code, entry_point, |addr, insn| {
+            insns.insert(addr, insn);
+        });
         insns
     }
 }

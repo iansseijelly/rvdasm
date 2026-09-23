@@ -4,21 +4,21 @@ use once_cell::sync::Lazy;
 
 #[derive(Debug, Clone)]
 pub struct Spec {
-    pub name: String,
+    pub name: &'static str,
     pub mask_bits: u32,
     pub match_bits: u32,
-    pub args: Vec<fn(u32) -> (Arg, String)>,
+    pub args: Vec<fn(u32) -> (Arg, Tag)>,
 }
 
 impl Spec {
     pub fn new(
-        name: &str,
+        name: &'static str,
         mask_bits: u32,
         match_bits: u32,
-        args: Vec<fn(u32) -> (Arg, String)>,
+        args: Vec<fn(u32) -> (Arg, Tag)>,
     ) -> Self {
         Self {
-            name: name.to_string(),
+            name,
             mask_bits,
             match_bits,
             args,
