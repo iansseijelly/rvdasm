@@ -31,6 +31,8 @@ pub struct Insn {
     pub len: u8,
     pub kind_mask: u8,
     nargs: u8,
+    /// The XLEN it was decoded for, 32 or 64, to which a branch or jump target wraps.
+    xlen: u8,
     pub offset: i32,
     pub raw: u32,
     pub name: &'static str,
@@ -81,6 +83,7 @@ impl Insn {
             len: get_insn_size(raw),
             kind_mask,
             nargs: nargs as u8,
+            xlen: 64,
             offset,
             raw,
             name,
@@ -91,6 +94,15 @@ impl Insn {
 
     pub fn get_len(&self) -> u8 {
         self.len
+    }
+
+    pub fn get_xlen(&self) -> u8 {
+        self.xlen
+    }
+
+    pub(crate) fn with_xlen(mut self, xlen: u8) -> Self {
+        self.xlen = xlen;
+        self
     }
 
     pub fn get_raw(&self) -> u32 {

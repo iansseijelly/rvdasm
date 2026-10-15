@@ -46,7 +46,11 @@ impl Disassembler {
             ops[n] = (arg, tag);
             n += 1;
         }
-        Some(Insn::new(code, spec.name, &ops[..n]))
+        let xlen = match self.xlen {
+            Xlen::XLEN32 => 32,
+            Xlen::XLEN64 => 64,
+        };
+        Some(Insn::new(code, spec.name, &ops[..n]).with_xlen(xlen))
     }
 
     /// Disassemble a single instruction
