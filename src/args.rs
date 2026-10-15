@@ -89,6 +89,7 @@ pub enum Tag {
     Imm, Csr,
     Rm, Aq, Rl, Fm, Pred, Succ,
     Vd, Vs1, Vs2, Vs3, Vm,
+    Vtype,
 }
 
 impl Tag {
@@ -103,6 +104,7 @@ impl Tag {
             Tag::Pred => "pred", Tag::Succ => "succ",
             Tag::Vd => "vd", Tag::Vs1 => "vs1", Tag::Vs2 => "vs2", Tag::Vs3 => "vs3",
             Tag::Vm => "vm",
+            Tag::Vtype => "vtype",
         }
     }
 
@@ -209,9 +211,12 @@ pub fn zimm5(insn: u32) -> (Arg, Tag) {
 }
 
 // fence
-// fence mode - TSO or normal
+// fence mode: a fence has 0; fence.tso, with 8, is its own instruction, and other values are reserved
 pub fn fm(insn: u32) -> (Arg, Tag) {
-    (Arg::Flag(x(insn, 28, 4)), Tag::Fm)
+    match x(insn, 28, 4) {
+        0 => (Arg::Flag(0), Tag::Fm),
+        _ => (Arg::Error, Tag::None),
+    }
 }
 // predecessor - I/O/R/W
 pub fn pred(insn: u32) -> (Arg, Tag) {
@@ -250,14 +255,28 @@ pub fn rm(insn: u32) -> (Arg, Tag) {
 }
 
 // compressed
+// A 3-bit register field names x8-x15, or f8-f15.
 pub fn rd_p(insn: u32) -> (Arg, Tag) {
-    (Arg::DstReg(x(insn, 2, 3)), Tag::Rd)
+    (Arg::DstReg(8 + x(insn, 2, 3)), Tag::Rd)
 }
 pub fn rs1_p(insn: u32) -> (Arg, Tag) {
-    (Arg::SrcReg(x(insn, 7, 3)), Tag::Rs1)
+    (Arg::SrcReg(8 + x(insn, 7, 3)), Tag::Rs1)
 }
 pub fn rs2_p(insn: u32) -> (Arg, Tag) {
-    (Arg::SrcReg(x(insn, 2, 3)), Tag::Rs2)
+    (Arg::SrcReg(8 + x(insn, 2, 3)), Tag::Rs2)
+}
+// The destination of an instruction whose rs1' is also rd', as c.sub's.
+pub fn rd_rs1_p(insn: u32) -> (Arg, Tag) {
+    (Arg::DstReg(8 + x(insn, 7, 3)), Tag::Rd)
+}
+pub fn fd_p(insn: u32) -> (Arg, Tag) {
+    (Arg::DstReg(8 + x(insn, 2, 3)), Tag::Fd)
+}
+pub fn fs2_p(insn: u32) -> (Arg, Tag) {
+    (Arg::SrcReg(8 + x(insn, 2, 3)), Tag::Fs2)
+}
+pub fn c_fs2(insn: u32) -> (Arg, Tag) {
+    (Arg::SrcReg(x(insn, 2, 5)), Tag::Fs2)
 }
 pub fn rs1_n0(insn: u32) -> (Arg, Tag) {
     match x(insn, 7, 5) {
@@ -289,12 +308,16 @@ pub fn c_rs2_n0(insn: u32) -> (Arg, Tag) {
         val => (Arg::SrcReg(val), Tag::Rs2),
     }
 }
+// The source of an instruction whose rs1 is also rd, which may be x0 (a HINT).
+pub fn c_rs1(insn: u32) -> (Arg, Tag) {
+    (Arg::SrcReg(x(insn, 7, 5)), Tag::Rs1)
+}
 pub fn c_rs2(insn: u32) -> (Arg, Tag) {
     (Arg::SrcReg(x(insn, 2, 5)), Tag::Rs2)
 }
 pub fn c_nzimm6hi(insn: u32) -> (Arg, Tag) {
     (
-        Arg::UImm(x(insn, 2, 5) + (x(insn, 12, 1) << 5)),
+        Arg::Imm(x(insn, 2, 5) as i32 + (xs(insn, 12, 1) << 5)),
         Tag::Imm,
     )
 }
@@ -312,11 +335,12 @@ pub fn c_imm6lo(_insn: u32) -> (Arg, Tag) {
 }
 pub fn c_nzimm10hi(insn: u32) -> (Arg, Tag) {
     (
-        Arg::UImm(
-            (x(insn, 6, 1) << 2)
-                + (x(insn, 5, 1) << 3)
-                + (x(insn, 11, 2) << 4)
-                + (x(insn, 7, 4) << 6),
+        Arg::Imm(
+            (x(insn, 6, 1) << 4) as i32
+                + (x(insn, 2, 1) << 5) as i32
+                + (x(insn, 5, 1) << 6) as i32
+                + (x(insn, 3, 2) << 7) as i32
+                + (xs(insn, 12, 1) << 9),
         ),
         Tag::Imm,
     )
@@ -324,16 +348,14 @@ pub fn c_nzimm10hi(insn: u32) -> (Arg, Tag) {
 pub fn c_nzimm10lo(_insn: u32) -> (Arg, Tag) {
     (Arg::Nothing, Tag::None)
 }
+// c.addi4spn's immediate, which is nonzero: a zero one is reserved.
 pub fn c_nzuimm10(insn: u32) -> (Arg, Tag) {
-    (
-        Arg::UImm(
-            (x(insn, 6, 1) << 2)
-                + (x(insn, 5, 1) << 3)
-                + (x(insn, 11, 2) << 4)
-                + (x(insn, 7, 4) << 6),
-        ),
-        Tag::Imm,
-    )
+    let imm =
+        (x(insn, 6, 1) << 2) + (x(insn, 5, 1) << 3) + (x(insn, 11, 2) << 4) + (x(insn, 7, 4) << 6);
+    match imm {
+        0 => (Arg::Error, Tag::None),
+        _ => (Arg::UImm(imm), Tag::Imm),
+    }
 }
 pub fn c_bimm9hi(insn: u32) -> (Arg, Tag) {
     (
@@ -383,11 +405,12 @@ pub fn c_uimm9sphi(insn: u32) -> (Arg, Tag) {
 pub fn c_uimm9splo(_insn: u32) -> (Arg, Tag) {
     (Arg::Nothing, Tag::None)
 }
+// c.lui's immediate, which is nonzero: a zero one is reserved.
 pub fn c_nzimm18hi(insn: u32) -> (Arg, Tag) {
-    (
-        Arg::Imm((x(insn, 2, 5) << 12) as i32 + (xs(insn, 12, 1) << 17)),
-        Tag::Imm,
-    )
+    match (x(insn, 2, 5) << 12) as i32 + (xs(insn, 12, 1) << 17) {
+        0 => (Arg::Error, Tag::None),
+        imm => (Arg::Imm(imm), Tag::Imm),
+    }
 }
 pub fn c_nzimm18lo(_insn: u32) -> (Arg, Tag) {
     (Arg::Nothing, Tag::None)
@@ -417,10 +440,7 @@ pub fn c_uimm9sp_s(insn: u32) -> (Arg, Tag) {
     )
 }
 pub fn c_nzuimm6hi(insn: u32) -> (Arg, Tag) {
-    (
-        Arg::UImm((x(insn, 2, 4)) + (x(insn, 12, 1) << 5)),
-        Tag::Imm,
-    )
+    (Arg::UImm(x(insn, 2, 5) + (x(insn, 12, 1) << 5)), Tag::Imm)
 }
 pub fn c_nzuimm6lo(_insn: u32) -> (Arg, Tag) {
     (Arg::Nothing, Tag::None)
@@ -452,9 +472,16 @@ pub fn vm(insn: u32) -> (Arg, Tag) {
 pub fn simm5(insn: u32) -> (Arg, Tag) {
     (Arg::Imm(xs(insn, 15, 5)), Tag::Imm)
 }
+// vror.vi's 6-bit immediate: bit 26, then bits 19:15.
+pub fn zimm6hi(insn: u32) -> (Arg, Tag) {
+    (Arg::UImm(x(insn, 15, 5) + (x(insn, 26, 1) << 5)), Tag::Imm)
+}
+pub fn zimm6lo(_insn: u32) -> (Arg, Tag) {
+    (Arg::Nothing, Tag::None)
+}
 pub fn zimm10(insn: u32) -> (Arg, Tag) {
-    (Arg::UImm(x(insn, 20, 10)), Tag::Imm)
+    (Arg::UImm(x(insn, 20, 10)), Tag::Vtype)
 }
 pub fn zimm11(insn: u32) -> (Arg, Tag) {
-    (Arg::UImm(x(insn, 20, 11)), Tag::Imm)
+    (Arg::UImm(x(insn, 20, 11)), Tag::Vtype)
 }

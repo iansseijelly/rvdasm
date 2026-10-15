@@ -4,3 +4,4 @@ pub mod args;
 pub mod disassembler;
 pub mod insn;
 pub mod isa;
+pub mod isa_consts;
