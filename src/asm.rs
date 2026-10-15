@@ -191,6 +191,7 @@ fn alias(name: &str, ops: Vec<String>, xlen: u8) -> (String, Vec<String>) {
         "addi" if o(2) == "0" => to("mv", &[o(0), o(1)]),
         "addiw" if o(2) == "0" => to("sext.w", &[o(0), o(1)]),
         "xori" if o(2) == "-1" => to("not", &[o(0), o(1)]),
+        "andi" if o(2) == "255" => to("zext.b", &[o(0), o(1)]),
         "sltiu" if o(2) == "1" => to("seqz", &[o(0), o(1)]),
         "sltu" if o(1) == "zero" => to("snez", &[o(0), o(2)]),
         "slt" if o(2) == "zero" => to("sltz", &[o(0), o(1)]),
