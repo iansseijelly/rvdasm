@@ -18,14 +18,16 @@ RUST_LOG=debug cargo run  --example dasm -- --file [ELF] --print
 
 ## Assembly text
 
-`Insn::asm_no_aliases(pc)` gives an instruction's text as GNU objdump prints it with `-M no-aliases`, as at `pc`:
-ABI register names, `imm(rs1)` memory operands, CSR names, rounding modes, vector types such as `e64,m8,ta,ma`, and
-`v0.t` on masked vector instructions. A branch or jump target is its absolute address, `0x80000050`, where objdump
-adds a symbol.
+`Insn::asm(pc)` gives an instruction's text as GNU objdump prints it, as at `pc`: ABI register names, `imm(rs1)`
+memory operands, CSR names, rounding modes, vector types such as `e64,m8,ta,ma`, `v0.t` on masked vector
+instructions, a compressed instruction as its base instruction, and aliases such as `li`, `mv`, `ret`, `beqz`, and
+`csrr`. `Insn::asm_no_aliases(pc)` gives it as objdump prints it with `-M no-aliases`, canonical mnemonics only. A
+branch or jump target is its absolute address, `0x80000050`, where objdump adds a symbol.
 
-`tests/objdump.rs` checks it, and that rvdasm decodes exactly the encodings objdump decodes, against objdump's text
+`tests/objdump.rs` checks both, and that rvdasm decodes exactly the encodings objdump decodes, against objdump's text
 for every encoding in `tests/data/objdump_rv64.tsv` and `objdump_rv32.tsv`: random encodings of every instruction,
-random encodings in every opcode, and a few edge cases. `scripts/objdump_ref.py` writes them with GNU binutils 2.46.
+as many with operands biased to the registers and immediates aliases look for, random encodings in every opcode, and
+edge cases. `scripts/objdump_ref.py` writes them with GNU binutils 2.46.
 
 ## Supported Extensions
 

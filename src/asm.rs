@@ -120,17 +120,165 @@ fn fence_set(v: u32) -> String {
     }
 }
 
+/// A mnemonic and its operands as text.
+fn join(name: String, operands: Vec<String>) -> String {
+    if operands.is_empty() {
+        name
+    } else {
+        format!("{name} {}", operands.join(","))
+    }
+}
+
+/// The CSR read that objdump names by the CSR, as `rdcycle` for `csrrs rd,cycle,zero`; the high halves of the counters
+/// only on RV32.
+fn csr_read_alias(csr: &str, xlen: u8) -> Option<&'static str> {
+    Some(match csr {
+        "cycle" => "rdcycle",
+        "time" => "rdtime",
+        "instret" => "rdinstret",
+        "cycleh" if xlen == 32 => "rdcycleh",
+        "timeh" if xlen == 32 => "rdtimeh",
+        "instreth" if xlen == 32 => "rdinstreth",
+        "fflags" => "frflags",
+        "frm" => "frrm",
+        "fcsr" => "frcsr",
+        _ => return None,
+    })
+}
+
+/// The alias objdump prints for an instruction, from its canonical mnemonic and operands, or the canonical form when
+/// it has none: a compressed instruction as its base instruction, and a pseudo-instruction for particular operands,
+/// such as `li` for `addi rd,zero,imm`.
+fn alias(name: &str, ops: Vec<String>, xlen: u8) -> (String, Vec<String>) {
+    let o = |i: usize| ops.get(i).map_or("", String::as_str);
+    let to = |alias: &str, keep: &[&str]| -> (String, Vec<String>) {
+        (
+            alias.to_string(),
+            keep.iter().map(|s| s.to_string()).collect(),
+        )
+    };
+    // A masked vector instruction's alias keeps its mask.
+    let mask = ops.last().is_some_and(|op| op == "v0.t");
+    let with_mask = |alias: &str, keep: &[&str]| {
+        let (name, mut ops) = to(alias, keep);
+        if mask {
+            ops.push("v0.t".into());
+        }
+        (name, ops)
+    };
+    match name {
+        // HINTs stay compressed: a shift by zero, and c.slli, c.li, c.lui, c.mv, or c.add writing x0.
+        "c.slli" | "c.srli" | "c.srai" if o(1) == "0x0" => (name.to_string(), ops),
+        "c.slli" | "c.li" | "c.lui" | "c.mv" | "c.add" if o(0) == "zero" => (name.to_string(), ops),
+        // Compressed instructions, as their base instructions.
+        "c.add" | "c.and" | "c.or" | "c.xor" | "c.sub" | "c.addw" | "c.subw" | "c.andi"
+        | "c.slli" | "c.srli" | "c.srai" => to(&name[2..], &[o(0), o(0), o(1)]),
+        "c.addi" if o(0) == "zero" && o(1) == "0" => to("nop", &[]),
+        "c.addi" if o(0) == "zero" => to("c.nop", &[o(1)]),
+        "c.addi" => to("addi", &[o(0), o(0), o(1)]),
+        "c.addiw" if o(1) == "0" => to("sext.w", &[o(0), o(0)]),
+        "c.addiw" => to("addiw", &[o(0), o(0), o(1)]),
+        "c.addi16sp" => to("addi", &["sp", "sp", o(1)]),
+        "c.addi4spn" => to("addi", &[o(0), "sp", o(2)]),
+        "c.jr" if o(0) == "ra" => to("ret", &[]),
+        "c.ebreak" | "c.unimp" | "c.mv" | "c.li" | "c.lui" | "c.jr" | "c.jalr" | "c.j"
+        | "c.jal" | "c.beqz" | "c.bnez" => (name[2..].to_string(), ops),
+        // Compressed loads and stores, those through sp too.
+        _ if name.starts_with("c.") => (name[2..].trim_end_matches("sp").to_string(), ops),
+
+        "addi" if o(0) == "zero" && o(1) == "zero" && o(2) == "0" => to("nop", &[]),
+        "addi" if o(1) == "zero" => to("li", &[o(0), o(2)]),
+        "addi" if o(2) == "0" => to("mv", &[o(0), o(1)]),
+        "addiw" if o(2) == "0" => to("sext.w", &[o(0), o(1)]),
+        "xori" if o(2) == "-1" => to("not", &[o(0), o(1)]),
+        "sltiu" if o(2) == "1" => to("seqz", &[o(0), o(1)]),
+        "sltu" if o(1) == "zero" => to("snez", &[o(0), o(2)]),
+        "slt" if o(2) == "zero" => to("sltz", &[o(0), o(1)]),
+        "slt" if o(1) == "zero" => to("sgtz", &[o(0), o(2)]),
+        "sub" if o(1) == "zero" => to("neg", &[o(0), o(2)]),
+        "subw" if o(1) == "zero" => to("negw", &[o(0), o(2)]),
+        "beq" if o(1) == "zero" => to("beqz", &[o(0), o(2)]),
+        "bne" if o(1) == "zero" => to("bnez", &[o(0), o(2)]),
+        "bge" if o(0) == "zero" => to("blez", &[o(1), o(2)]),
+        "bge" if o(1) == "zero" => to("bgez", &[o(0), o(2)]),
+        "blt" if o(1) == "zero" => to("bltz", &[o(0), o(2)]),
+        "blt" if o(0) == "zero" => to("bgtz", &[o(1), o(2)]),
+        "jal" if o(0) == "zero" => to("j", &[o(1)]),
+        "jal" if o(0) == "ra" => to("jal", &[o(1)]),
+        "jalr" => {
+            // The target, imm(rs1), as rs1 alone when imm is 0.
+            let target = o(1);
+            let base = target.strip_prefix("0(").and_then(|t| t.strip_suffix(')'));
+            match (o(0), base) {
+                ("zero", Some("ra")) => to("ret", &[]),
+                ("zero", Some(base)) => to("jr", &[base]),
+                ("zero", None) => to("jr", &[target]),
+                ("ra", Some(base)) => to("jalr", &[base]),
+                ("ra", None) => to("jalr", &[target]),
+                (rd, Some(base)) => to("jalr", &[rd, base]),
+                _ => (name.to_string(), ops),
+            }
+        }
+        "csrrs" if o(2) == "zero" => match csr_read_alias(o(1), xlen) {
+            Some(alias) => to(alias, &[o(0)]),
+            None => to("csrr", &[o(0), o(1)]),
+        },
+        "csrrw" if matches!(o(1), "fflags" | "frm" | "fcsr") => {
+            let alias = match o(1) {
+                "fflags" => "fsflags",
+                "frm" => "fsrm",
+                _ => "fscsr",
+            };
+            if o(0) == "zero" {
+                to(alias, &[o(2)])
+            } else {
+                to(alias, &[o(0), o(2)])
+            }
+        }
+        "csrrwi" if o(1) == "fflags" => to("fsflagsi", &[o(0), o(2)]),
+        "csrrwi" if o(1) == "frm" => to("fsrmi", &[o(0), o(2)]),
+        "csrrw" | "csrrs" | "csrrc" | "csrrwi" | "csrrsi" | "csrrci" if o(0) == "zero" => {
+            to(&format!("csr{}", &name[4..]), &[o(1), o(2)])
+        }
+        "fence" if o(0) == "iorw" && o(1) == "iorw" => to("fence", &[]),
+        "sfence.vma" if o(0) == "zero" && o(1) == "zero" => to("sfence.vma", &[]),
+        "sfence.vma" if o(1) == "zero" => to("sfence.vma", &[o(0)]),
+        "fsgnj.s" | "fsgnj.d" if o(1) == o(2) => to(&format!("fmv{}", &name[5..]), &[o(0), o(1)]),
+        "fsgnjn.s" | "fsgnjn.d" if o(1) == o(2) => {
+            to(&format!("fneg{}", &name[6..]), &[o(0), o(1)])
+        }
+        "fsgnjx.s" | "fsgnjx.d" if o(1) == o(2) => {
+            to(&format!("fabs{}", &name[6..]), &[o(0), o(1)])
+        }
+        "vfsgnjn.vv" if o(1) == o(2) => with_mask("vfneg.v", &[o(0), o(1)]),
+        "vfsgnjx.vv" if o(1) == o(2) => with_mask("vfabs.v", &[o(0), o(1)]),
+        "vl1re8.v" | "vl2re8.v" | "vl4re8.v" | "vl8re8.v" => (format!("{}r.v", &name[..3]), ops),
+        "vmand.mm" if o(1) == o(2) => to("vmmv.m", &[o(0), o(1)]),
+        "vmnand.mm" if o(1) == o(2) => to("vmnot.m", &[o(0), o(1)]),
+        "vmxor.mm" if o(0) == o(1) && o(1) == o(2) => to("vmclr.m", &[o(0)]),
+        "vmxnor.mm" if o(0) == o(1) && o(1) == o(2) => to("vmset.m", &[o(0)]),
+        "vnsrl.wx" if o(2) == "zero" => with_mask("vncvt.x.x.w", &[o(0), o(1)]),
+        "vrsub.vx" if o(2) == "zero" => with_mask("vneg.v", &[o(0), o(1)]),
+        "vwadd.vx" if o(2) == "zero" => with_mask("vwcvt.x.x.v", &[o(0), o(1)]),
+        "vwaddu.vx" if o(2) == "zero" => with_mask("vwcvtu.x.x.v", &[o(0), o(1)]),
+        "vxor.vi" if o(2) == "-1" => with_mask("vnot.v", &[o(0), o(1)]),
+        _ => (name.to_string(), ops),
+    }
+}
+
 impl Insn {
+    /// The instruction as GNU objdump prints it by default, with its aliases, as at `pc`, to which a branch or jump
+    /// target is relative: a compressed instruction as its base instruction, and pseudo-instructions such as `li`,
+    /// `mv`, `ret`, `beqz`, and `csrr`.
+    pub fn asm(&self, pc: u64) -> String {
+        let (name, operands) = alias(&self.asm_mnemonic(), self.asm_operands(pc), self.get_xlen());
+        join(name, operands)
+    }
+
     /// The instruction as GNU objdump prints it with `-M no-aliases`, as at `pc`, to which a branch or jump target is
     /// relative.
     pub fn asm_no_aliases(&self, pc: u64) -> String {
-        let operands = self.asm_operands(pc);
-        let name = self.asm_mnemonic();
-        if operands.is_empty() {
-            name
-        } else {
-            format!("{name} {}", operands.join(","))
-        }
+        join(self.asm_mnemonic(), self.asm_operands(pc))
     }
 
     fn arg(&self, tag: Tag) -> Option<Arg> {

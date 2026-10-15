@@ -1,10 +1,15 @@
-//! Checks `Insn::asm_no_aliases` against GNU objdump's `-M no-aliases` text over the encodings in tests/data/objdump_rv64.tsv
-//! and objdump_rv32.tsv, which scripts/objdump_ref.py writes: rvdasm decodes exactly the encodings objdump decodes,
-//! and writes each as objdump does.
+//! Checks `Insn::asm_no_aliases` and `Insn::asm` against GNU objdump's text, with `-M no-aliases` and by default, over
+//! the encodings in tests/data/objdump_rv64.tsv and objdump_rv32.tsv, which scripts/objdump_ref.py writes: rvdasm
+//! decodes exactly the encodings objdump decodes, and writes each as objdump does.
 use rvdasm::disassembler::{Disassembler, Xlen};
+use rvdasm::insn::Insn;
 use std::fs;
 
-fn check(path: &str, xlen: Xlen) {
+/// Each line is offset, encoding, objdump's text with `-M no-aliases`, and its text by default.
+const NO_ALIASES: usize = 2;
+const ALIASES: usize = 3;
+
+fn check(path: &str, xlen: Xlen, column: usize, text: fn(&Insn, u64) -> String) {
     let d = Disassembler::new(xlen);
     let mut failures = Vec::new();
     let mut checked = 0;
@@ -16,10 +21,8 @@ fn check(path: &str, xlen: Xlen) {
         let f: Vec<&str> = line.split('\t').collect();
         let offset = u64::from_str_radix(f[0], 16).unwrap();
         let word = u32::from_str_radix(f[1], 16).unwrap();
-        let want = f[2];
-        let got = d
-            .disassmeble_one(word)
-            .map(|insn| insn.asm_no_aliases(offset));
+        let want = f[column];
+        let got = d.disassmeble_one(word).map(|insn| text(&insn, offset));
         checked += 1;
         let same = match &got {
             None => want == ".insn",
@@ -42,11 +45,41 @@ fn check(path: &str, xlen: Xlen) {
 }
 
 #[test]
+fn rv64_no_aliases() {
+    check(
+        "tests/data/objdump_rv64.tsv",
+        Xlen::XLEN64,
+        NO_ALIASES,
+        Insn::asm_no_aliases,
+    );
+}
+
+#[test]
+fn rv32_no_aliases() {
+    check(
+        "tests/data/objdump_rv32.tsv",
+        Xlen::XLEN32,
+        NO_ALIASES,
+        Insn::asm_no_aliases,
+    );
+}
+
+#[test]
 fn rv64() {
-    check("tests/data/objdump_rv64.tsv", Xlen::XLEN64);
+    check(
+        "tests/data/objdump_rv64.tsv",
+        Xlen::XLEN64,
+        ALIASES,
+        Insn::asm,
+    );
 }
 
 #[test]
 fn rv32() {
-    check("tests/data/objdump_rv32.tsv", Xlen::XLEN32);
+    check(
+        "tests/data/objdump_rv32.tsv",
+        Xlen::XLEN32,
+        ALIASES,
+        Insn::asm,
+    );
 }
