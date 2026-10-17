@@ -1,6 +1,6 @@
 [package]
 name = "rvdasm"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 description = "A RISC-V disassembler written in Rust"
 license = "MIT"
@@ -8,6 +8,8 @@ repository = "https://github.com/iansseijelly/rvdasm"
 readme = "README.md"
 keywords = ["risc-v", "disassembler", "isa"]
 authors = ["iansseijelly <iansseijelly@berkeley.edu>"]
+# Generating src/isa.rs needs the riscv-opcodes submodule, and the tests need their data; neither is needed to build.
+exclude = ["riscv-opcodes", "tests", "scripts", ".vscode"]
 
 [dependencies]
 once_cell = "1.17.0"
