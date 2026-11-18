@@ -42,7 +42,12 @@ impl Disassembler {
             if matches!(arg, Arg::Nothing) {
                 continue;
             }
-            assert!(n < MAX_ARGS, "spec {} lists more than {} operands", spec.name(), MAX_ARGS);
+            assert!(
+                n < MAX_ARGS,
+                "spec {} lists more than {} operands",
+                spec.name(),
+                MAX_ARGS
+            );
             ops[n] = (arg, tag);
             n += 1;
         }

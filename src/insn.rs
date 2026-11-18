@@ -51,7 +51,11 @@ impl Serialize for Op {
 
 /// Helper: Get the size of the instruction in bytes
 fn get_insn_size(raw: u32) -> u8 {
-    if ((raw) & 0x03) < 0x03 { 2 } else { 4 }
+    if ((raw) & 0x03) < 0x03 {
+        2
+    } else {
+        4
+    }
 }
 
 impl Insn {
@@ -72,11 +76,19 @@ impl Insn {
             if arg.is_imm() {
                 offset = arg.get_val_signed_imm();
             }
-            if let Some(i) = tags[..nargs].iter().position(|&t| t == tag && tag != Tag::None) {
+            if let Some(i) = tags[..nargs]
+                .iter()
+                .position(|&t| t == tag && tag != Tag::None)
+            {
                 args[i] = arg;
                 continue;
             }
-            assert!(nargs < MAX_ARGS, "instruction {} has more than {} operands", name, MAX_ARGS);
+            assert!(
+                nargs < MAX_ARGS,
+                "instruction {} has more than {} operands",
+                name,
+                MAX_ARGS
+            );
             tags[nargs] = tag;
             args[nargs] = arg;
             nargs += 1;
@@ -198,10 +210,20 @@ impl Insn {
     pub fn to_canonical(&self) -> String {
         let mut operands = Vec::new();
         for (t, a) in self.get_dst() {
-            operands.push(format!("{} {}{}", t.as_str().to_uppercase(), t.prefix(), a.to_string()));
+            operands.push(format!(
+                "{} {}{}",
+                t.as_str().to_uppercase(),
+                t.prefix(),
+                a.to_string()
+            ));
         }
         for (t, a) in self.sorted_src() {
-            operands.push(format!("{} {}{}", t.as_str().to_uppercase(), t.prefix(), a.to_string()));
+            operands.push(format!(
+                "{} {}{}",
+                t.as_str().to_uppercase(),
+                t.prefix(),
+                a.to_string()
+            ));
         }
         if let Some(imm) = self.get_imm() {
             operands.push(format!("IMM {}", imm.to_string()));

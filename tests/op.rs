@@ -8,7 +8,10 @@ fn every_op_has_a_distinct_name_and_an_extension() {
     let names: HashSet<_> = Op::ALL.iter().map(|op| op.name()).collect();
     assert_eq!(names.len(), Op::ALL.len());
     assert!(Op::ALL.iter().all(|op| op.ext().is_some()));
-    assert!(Op::ALL.windows(2).all(|w| w[0].name() < w[1].name()), "ALL is in mnemonic order");
+    assert!(
+        Op::ALL.windows(2).all(|w| w[0].name() < w[1].name()),
+        "ALL is in mnemonic order"
+    );
 }
 
 #[test]
@@ -35,6 +38,7 @@ fn decode_gives_the_op() {
         assert_eq!(op(0x02b50533), Some(Op::Mul)); // mul a0,a0,a1
         assert_eq!(op(0x0000100f), Some(Op::FenceI)); // fence.i
         assert_eq!(op(0x4505), Some(Op::CLi)); // c.li a0,1
+
         // slli has an RV32 encoding and an RV64 one, and is one Op in RV64I's extension.
         assert_eq!(op(0x00151513), Some(Op::Slli)); // slli a0,a0,1
     }
@@ -48,6 +52,11 @@ fn a_walk_passes_over_an_undecodable_encoding_as_unknown() {
     let dasm = Disassembler::new(Xlen::XLEN64);
     let code = [0xffffffffu32.to_le_bytes(), 0x00b50533u32.to_le_bytes()].concat();
     let mut ops = Vec::new();
-    dasm.disassemble_each(&code, 0x1000, |addr, insn| ops.push((addr, insn.op, insn.get_name())));
-    assert_eq!(ops, [(0x1000, Op::Unknown, "unknown"), (0x1004, Op::Add, "add")]);
+    dasm.disassemble_each(&code, 0x1000, |addr, insn| {
+        ops.push((addr, insn.op, insn.get_name()))
+    });
+    assert_eq!(
+        ops,
+        [(0x1000, Op::Unknown, "unknown"), (0x1004, Op::Add, "add")]
+    );
 }

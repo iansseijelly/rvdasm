@@ -12,8 +12,19 @@ fn main() {
     let mut w = BufWriter::new(std::io::stdout());
     for k in keys {
         let i = &insns[&k];
-        writeln!(w, "{:#x} {:08x} len={} kind={} off={} | {} | {}", k, i.get_raw(), i.get_len(),
-                 i.is_branch() as u8 | (i.is_direct_jump() as u8) << 1 | (i.is_indirect_jump() as u8) << 2,
-                 i.offset, i.to_string(), i.to_canonical()).unwrap();
+        writeln!(
+            w,
+            "{:#x} {:08x} len={} kind={} off={} | {} | {}",
+            k,
+            i.get_raw(),
+            i.get_len(),
+            i.is_branch() as u8
+                | (i.is_direct_jump() as u8) << 1
+                | (i.is_indirect_jump() as u8) << 2,
+            i.offset,
+            i.to_string(),
+            i.to_canonical()
+        )
+        .unwrap();
     }
 }

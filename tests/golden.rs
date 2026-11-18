@@ -12,7 +12,14 @@ fn test_golden_text() {
     keys.sort();
     let got: Vec<String> = keys
         .iter()
-        .map(|k| format!("0x{:08x}: {:08x}     {}", k, insns[k].get_raw(), insns[k].to_string()))
+        .map(|k| {
+            format!(
+                "0x{:08x}: {:08x}     {}",
+                k,
+                insns[k].get_raw(),
+                insns[k].to_string()
+            )
+        })
         .collect();
     let want: Vec<String> = fs::read_to_string("tests/data/test.golden.txt")
         .unwrap()

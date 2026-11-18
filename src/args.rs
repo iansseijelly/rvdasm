@@ -78,17 +78,32 @@ impl Arg {
     }
 }
 
-
 /// Operand role, as the spec table names it. Replaces the per-operand heap `String`
 /// tag: a `Copy` byte that formats back to the same text through `as_str()`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Tag {
     None,
-    Rd, Rs1, Rs2, Rs3,
-    Fd, Fs1, Fs2, Fs3,
-    Imm, Csr,
-    Rm, Aq, Rl, Fm, Pred, Succ,
-    Vd, Vs1, Vs2, Vs3, Vm,
+    Rd,
+    Rs1,
+    Rs2,
+    Rs3,
+    Fd,
+    Fs1,
+    Fs2,
+    Fs3,
+    Imm,
+    Csr,
+    Rm,
+    Aq,
+    Rl,
+    Fm,
+    Pred,
+    Succ,
+    Vd,
+    Vs1,
+    Vs2,
+    Vs3,
+    Vm,
     Vtype,
 }
 
@@ -97,12 +112,26 @@ impl Tag {
     pub fn as_str(self) -> &'static str {
         match self {
             Tag::None => "",
-            Tag::Rd => "rd", Tag::Rs1 => "rs1", Tag::Rs2 => "rs2", Tag::Rs3 => "rs3",
-            Tag::Fd => "fd", Tag::Fs1 => "fs1", Tag::Fs2 => "fs2", Tag::Fs3 => "fs3",
-            Tag::Imm => "imm", Tag::Csr => "csr",
-            Tag::Rm => "rm", Tag::Aq => "aq", Tag::Rl => "rl", Tag::Fm => "fm",
-            Tag::Pred => "pred", Tag::Succ => "succ",
-            Tag::Vd => "vd", Tag::Vs1 => "vs1", Tag::Vs2 => "vs2", Tag::Vs3 => "vs3",
+            Tag::Rd => "rd",
+            Tag::Rs1 => "rs1",
+            Tag::Rs2 => "rs2",
+            Tag::Rs3 => "rs3",
+            Tag::Fd => "fd",
+            Tag::Fs1 => "fs1",
+            Tag::Fs2 => "fs2",
+            Tag::Fs3 => "fs3",
+            Tag::Imm => "imm",
+            Tag::Csr => "csr",
+            Tag::Rm => "rm",
+            Tag::Aq => "aq",
+            Tag::Rl => "rl",
+            Tag::Fm => "fm",
+            Tag::Pred => "pred",
+            Tag::Succ => "succ",
+            Tag::Vd => "vd",
+            Tag::Vs1 => "vs1",
+            Tag::Vs2 => "vs2",
+            Tag::Vs3 => "vs3",
             Tag::Vm => "vm",
             Tag::Vtype => "vtype",
         }
