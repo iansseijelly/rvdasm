@@ -317,15 +317,15 @@ impl Insn {
     fn asm_mnemonic(&self) -> String {
         let set = |tag| matches!(self.arg(tag), Some(Arg::Flag(1)));
         match (set(Tag::Aq), set(Tag::Rl)) {
-            (true, true) => format!("{}.aqrl", self.name),
-            (true, false) => format!("{}.aq", self.name),
-            (false, true) => format!("{}.rl", self.name),
-            (false, false) => self.name.to_string(),
+            (true, true) => format!("{}.aqrl", self.op.name()),
+            (true, false) => format!("{}.aq", self.op.name()),
+            (false, true) => format!("{}.rl", self.op.name()),
+            (false, false) => self.op.name().to_string(),
         }
     }
 
     fn asm_operands(&self, pc: u64) -> Vec<String> {
-        let name = self.name;
+        let name = self.op.name();
         let rd = || self.reg_of(&[Tag::Rd, Tag::Fd, Tag::Vd]);
         let rs1 = || self.reg_of(&[Tag::Rs1, Tag::Fs1]).unwrap_or_default();
         let rs2 = || self.reg_of(&[Tag::Rs2, Tag::Fs2]);

@@ -42,7 +42,7 @@ impl Disassembler {
             if matches!(arg, Arg::Nothing) {
                 continue;
             }
-            assert!(n < MAX_ARGS, "spec {} lists more than {} operands", spec.name, MAX_ARGS);
+            assert!(n < MAX_ARGS, "spec {} lists more than {} operands", spec.name(), MAX_ARGS);
             ops[n] = (arg, tag);
             n += 1;
         }
@@ -50,7 +50,7 @@ impl Disassembler {
             Xlen::XLEN32 => 32,
             Xlen::XLEN64 => 64,
         };
-        Some(Insn::new(code, spec.name, &ops[..n]).with_xlen(xlen))
+        Some(Insn::new(code, spec.op, &ops[..n]).with_xlen(xlen))
     }
 
     /// Disassemble a single instruction
@@ -127,7 +127,7 @@ impl Disassembler {
     }
 
     /// Disassemble every instruction in a code blob, handing each (address, insn)
-    /// to `sink` in address order. Undecodable encodings become an "unknown" insn
+    /// to `sink` in address order. Undecodable encodings become an `Op::Unknown` insn
     /// of the length their low bits imply, so the walk never desynchronises.
     ///
     /// This is the allocation-free primitive: a caller indexing a large binary
@@ -149,7 +149,7 @@ impl Disassembler {
                 }
                 None => {
                     i += if is_compressed { 2 } else { 4 };
-                    sink(addr, Insn::new(code_u32, "unknown", &[]));
+                    sink(addr, Insn::new(code_u32, Op::Unknown, &[]));
                 }
             }
         }

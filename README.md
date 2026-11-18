@@ -16,6 +16,14 @@ Example:
 RUST_LOG=debug cargo run  --example dasm -- --file [ELF] --print
 ```
 
+## Instructions
+
+A decoded `Insn`'s `op` is its instruction, an `Op`, generated from riscv-opcodes with one variant per mnemonic
+(`Op::Add`, `Op::CAddi`, `Op::FenceI`), so a consumer can `match` on it. `Op::name()` gives the mnemonic, and
+`Op::ext()` the riscv-opcodes extension that defines it, an `Ext` such as `Ext::RvI` or `Ext::Rv64I`. `Op::ALL` and
+`Ext::ALL` list them. A disassembly walk gives an encoding that decodes to no instruction as `Op::Unknown`, which is
+not in `Op::ALL` and has no extension.
+
 ## Assembly text
 
 `Insn::asm(pc)` gives an instruction's text as GNU objdump prints it, as at `pc`: ABI register names, `imm(rs1)`

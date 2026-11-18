@@ -1,5 +1,6 @@
 use crate::args::{Arg, Tag};
-use serde::Serialize;
+use crate::isa::Op;
+use serde::{Serialize, Serializer};
 
 const BRANCH_OPCODES: &[&str] = &[
     "beq", "bge", "bgeu", "blt", "bltu", "bne", "beqz", "bnez", "bgez", "blez", "bltz", "bgtz",
@@ -20,9 +21,9 @@ pub const MAX_ARGS: usize = 6;
 
 /// A decoded instruction.
 ///
-/// Flat and allocation-free: the mnemonic is a `&'static str` out of the spec table
+/// Flat and allocation-free: the instruction is its [`Op`], out of the spec table,
 /// and the operands live in a fixed array. A consumer that indexes a whole binary
-/// (tens of millions of these) pays ~90 bytes each and no heap traffic, where the
+/// (tens of millions of these) pays ~70 bytes each and no heap traffic, where the
 /// previous `String` + boxed `HashMap<String, Arg>` layout cost ~1 KB and seven
 /// allocations per instruction. Everything the old accessors returned is derivable:
 /// `get_imm`, `get_src`, `get_dst`, `to_string` and `to_canonical` keep their output.
@@ -35,9 +36,17 @@ pub struct Insn {
     xlen: u8,
     pub offset: i32,
     pub raw: u32,
-    pub name: &'static str,
+    /// The instruction. It serializes as its mnemonic, under `name`.
+    #[serde(rename = "name")]
+    pub op: Op,
     tags: [Tag; MAX_ARGS],
     args: [Arg; MAX_ARGS],
+}
+
+impl Serialize for Op {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.name())
+    }
 }
 
 /// Helper: Get the size of the instruction in bytes
@@ -50,7 +59,8 @@ impl Insn {
     /// placeholders (the `*lo` halves of split immediates) are dropped. A repeated
     /// tag replaces the earlier operand, which is what the previous map-based
     /// layout did on insert; `offset` is the signed value of the immediate, if any.
-    pub fn new(raw: u32, name: &'static str, operands: &[(Arg, Tag)]) -> Self {
+    pub fn new(raw: u32, op: Op, operands: &[(Arg, Tag)]) -> Self {
+        let name = op.name();
         let mut tags = [Tag::None; MAX_ARGS];
         let mut args = [Arg::Nothing; MAX_ARGS];
         let mut nargs = 0usize;
@@ -86,7 +96,7 @@ impl Insn {
             xlen: 64,
             offset,
             raw,
-            name,
+            op,
             tags,
             args,
         }
@@ -110,7 +120,7 @@ impl Insn {
     }
 
     pub fn get_name(&self) -> &'static str {
-        self.name
+        self.op.name()
     }
 
     /// Every operand, in spec-table order, with its role tag.
@@ -178,9 +188,9 @@ impl Insn {
         }
         // flags are not printed, as before
         if operands.is_empty() {
-            self.name.to_string()
+            self.op.name().to_string()
         } else {
-            format!("{} {}", self.name, operands.join(", "))
+            format!("{} {}", self.op.name(), operands.join(", "))
         }
     }
 
@@ -200,9 +210,9 @@ impl Insn {
             operands.push(format!("CSR {}", csr.to_string()));
         }
         if operands.is_empty() {
-            self.name.to_string()
+            self.op.name().to_string()
         } else {
-            format!("{} {}", self.name, operands.join(" "))
+            format!("{} {}", self.op.name(), operands.join(" "))
         }
     }
 }
