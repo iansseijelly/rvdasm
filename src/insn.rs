@@ -186,6 +186,14 @@ impl Insn {
         }
     }
 
+    /// The CSR number, if the instruction has one.
+    pub fn csr(&self) -> Option<u32> {
+        match self.arg(Tag::Csr)? {
+            Arg::CSR(c) => Some(c),
+            _ => None,
+        }
+    }
+
     /// The register the operand with role `tag` names, if the instruction has one.
     fn reg_num(&self, tag: Tag) -> Option<u32> {
         match self.arg(tag)? {

@@ -24,9 +24,9 @@ A decoded `Insn`'s `op` is its instruction, an `Op`, generated from riscv-opcode
 `Ext::ALL` list them. A disassembly walk gives an encoding that decodes to no instruction as `Op::Unknown`, which is
 not in `Op::ALL` and has no extension.
 
-Its operands are `Insn::rd()`, `rs1()`, `rs2()`, and `imm()`, each `None` if the instruction has no such operand.
-`imm()` is the immediate as the instruction uses it: a branch's offset assembled from its fields, `lui`'s shifted
-left by 12, sign-extended if it is signed and zero-extended if not.
+Its operands are `Insn::rd()`, `rs1()`, `rs2()`, `imm()`, and `csr()`, each `None` if the instruction has no such
+operand. `imm()` is the immediate as the instruction uses it: a branch's offset assembled from its fields, `lui`'s
+shifted left by 12, sign-extended if it is signed and zero-extended if not.
 
 ## Assembly text
 

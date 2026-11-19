@@ -51,3 +51,12 @@ fn a_compressed_destination_that_is_also_a_source_is_both() {
     assert_eq!(operands(0x952e), (Some(10), Some(10), Some(11), None)); // c.add a0,a1
     assert_eq!(operands(0x8d0d), (Some(10), Some(10), Some(11), None)); // c.sub a0,a1
 }
+
+#[test]
+fn a_csr_instruction_has_its_csr() {
+    let csrr = decode(0xf1402573); // csrr a0,mhartid: csrrs a0,mhartid,zero
+    assert_eq!((csrr.rd(), csrr.rs1(), csrr.csr()), (Some(10), Some(0), Some(0xf14)));
+    let csrwi = decode(0x30445073); // csrwi mie,8
+    assert_eq!((csrwi.csr(), csrwi.imm()), (Some(0x304), Some(8)));
+    assert_eq!(decode(0x00b50533).csr(), None); // add a0,a0,a1
+}
