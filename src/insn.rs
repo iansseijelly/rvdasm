@@ -160,6 +160,45 @@ impl Insn {
         self.operands().map(|(_, a)| a).find(|a| a.is_csr())
     }
 
+    /// The destination register, if the instruction has one.
+    pub fn rd(&self) -> Option<u32> {
+        self.reg_num(Tag::Rd)
+    }
+
+    /// The first source register, if the instruction has one.
+    pub fn rs1(&self) -> Option<u32> {
+        self.reg_num(Tag::Rs1)
+    }
+
+    /// The second source register, if the instruction has one.
+    pub fn rs2(&self) -> Option<u32> {
+        self.reg_num(Tag::Rs2)
+    }
+
+    /// The immediate, if the instruction has one, as the instruction uses it: assembled from its fields,
+    /// sign-extended if it is signed (a branch's or jump's offset, `lui`'s and `auipc`'s already shifted left by
+    /// 12), and zero-extended if not (a shift amount, a CSR instruction's `uimm`).
+    pub fn imm(&self) -> Option<i64> {
+        match self.arg(Tag::Imm)? {
+            Arg::Imm(v) => Some(v.into()),
+            Arg::UImm(v) => Some(v.into()),
+            _ => None,
+        }
+    }
+
+    /// The register the operand with role `tag` names, if the instruction has one.
+    fn reg_num(&self, tag: Tag) -> Option<u32> {
+        match self.arg(tag)? {
+            Arg::DstReg(r) | Arg::SrcReg(r) => Some(r),
+            _ => None,
+        }
+    }
+
+    /// The operand with role `tag`, if the instruction has one.
+    pub(crate) fn arg(&self, tag: Tag) -> Option<Arg> {
+        self.operands().find(|&(t, _)| t == tag).map(|(_, a)| a)
+    }
+
     pub fn is_branch(&self) -> bool {
         self.kind_mask & BRANCH_MASK != 0
     }

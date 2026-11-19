@@ -282,10 +282,6 @@ impl Insn {
         join(self.asm_mnemonic(), self.asm_operands(pc))
     }
 
-    fn arg(&self, tag: Tag) -> Option<Arg> {
-        self.operands().find(|(t, _)| *t == tag).map(|(_, a)| a)
-    }
-
     fn reg(&self, tag: Tag) -> Option<String> {
         self.arg(tag).map(|a| reg_name(tag, a.get_val()))
     }
@@ -295,16 +291,8 @@ impl Insn {
         tags.iter().find_map(|&t| self.reg(t))
     }
 
-    fn imm(&self) -> i64 {
-        match self.arg(Tag::Imm) {
-            Some(Arg::Imm(v)) => v as i64,
-            Some(Arg::UImm(v)) => v as i64,
-            _ => 0,
-        }
-    }
-
     fn target(&self, pc: u64) -> String {
-        let target = pc.wrapping_add(self.imm() as u64);
+        let target = pc.wrapping_add(self.imm().unwrap_or(0) as u64);
         let target = if self.get_xlen() == 32 {
             target & 0xffff_ffff
         } else {
@@ -329,7 +317,7 @@ impl Insn {
         let rd = || self.reg_of(&[Tag::Rd, Tag::Fd, Tag::Vd]);
         let rs1 = || self.reg_of(&[Tag::Rs1, Tag::Fs1]).unwrap_or_default();
         let rs2 = || self.reg_of(&[Tag::Rs2, Tag::Fs2]);
-        let imm = self.imm();
+        let imm = self.imm().unwrap_or(0);
         let mem = |base: String| format!("{imm}({base})");
         let hex = |v: i64| format!("0x{v:x}");
         let all = |v: Vec<Option<String>>| v.into_iter().flatten().collect::<Vec<_>>();
