@@ -251,7 +251,6 @@ dependencies = [
  "clap",
  "log",
  "object",
- "once_cell",
  "regex",
  "serde",
 ]

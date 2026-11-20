@@ -2,18 +2,9 @@ use crate::args::{Arg, Tag};
 use crate::isa::Op;
 use serde::{Serialize, Serializer};
 
-const BRANCH_OPCODES: &[&str] = &[
-    "beq", "bge", "bgeu", "blt", "bltu", "bne", "beqz", "bnez", "bgez", "blez", "bltz", "bgtz",
-    "bgt", "ble", "bgtu", "bleu", "c.beqz", "c.bnez", "c.bltz", "c.bgez",
-];
-const IJ_OPCODES: &[&str] = &["jal", "j", "call", "tail", "c.j", "c.jal"];
-const UJ_OPCODES: &[&str] = &["jalr", "jr", "c.jr", "c.jalr", "ret"];
-
 const BRANCH_MASK: u8 = 0x01;
 const IJ_MASK: u8 = 0x02;
-const IJ_OFFSET: u8 = 1;
 const UJ_MASK: u8 = 0x04;
-const UJ_OFFSET: u8 = 2;
 const CFC_MASK: u8 = 0x07; //0b111
 
 /// Most operands any spec in the table lists (fmadd-class: rd, rs1, rs2, rs3, rm).
@@ -46,6 +37,18 @@ pub struct Insn {
 impl Serialize for Op {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(self.name())
+    }
+}
+
+/// Whether `op` is a branch, a direct jump, or an indirect jump, as `Insn::kind_mask` holds it.
+const fn kind_mask(op: Op) -> u8 {
+    match op {
+        Op::Beq | Op::Bne | Op::Blt | Op::Bge | Op::Bltu | Op::Bgeu | Op::CBeqz | Op::CBnez => {
+            BRANCH_MASK
+        }
+        Op::Jal | Op::CJ | Op::CJal => IJ_MASK,
+        Op::Jalr | Op::CJr | Op::CJalr => UJ_MASK,
+        _ => 0,
     }
 }
 
@@ -94,18 +97,62 @@ impl Insn {
             nargs += 1;
         }
 
-        let is_branch = BRANCH_OPCODES.contains(&name);
-        let is_direct_jump = IJ_OPCODES.contains(&name);
-        let is_indirect_jump = UJ_OPCODES.contains(&name);
-        let kind_mask = (is_branch as u8)
-            | ((is_direct_jump as u8) << IJ_OFFSET)
-            | ((is_indirect_jump as u8) << UJ_OFFSET);
+        Self::from_packed(raw, op, 64, nargs, offset, tags, args)
+    }
 
+    /// Build from all of a spec's operands at once, as a generated packer calls it, for an XLEN of `xlen`: `None` if
+    /// any is `Arg::Error`, and otherwise what `new` builds from them. Inlined into each packer, where `N` and the tags are constants,
+    /// it compiles to straight-line code, with no loop left. Unlike `new`, it does not merge a repeated tag: no
+    /// spec has one, which `tests/operands.rs` checks.
+    #[inline(always)]
+    pub(crate) fn from_parts<const N: usize>(
+        raw: u32,
+        op: Op,
+        xlen: u8,
+        operands: [(Arg, Tag); N],
+    ) -> Option<Self> {
+        const {
+            assert!(
+                N <= MAX_ARGS,
+                "a spec lists more operands than an Insn holds"
+            )
+        };
+        let mut tags = [Tag::None; MAX_ARGS];
+        let mut args = [Arg::Nothing; MAX_ARGS];
+        let mut nargs = 0;
+        let mut offset = 0i32;
+        for (arg, tag) in operands {
+            match arg {
+                Arg::Error => return None,
+                Arg::Nothing => continue,
+                _ => {}
+            }
+            if arg.is_imm() {
+                offset = arg.get_val_signed_imm();
+            }
+            tags[nargs] = tag;
+            args[nargs] = arg;
+            nargs += 1;
+        }
+        Some(Self::from_packed(raw, op, xlen, nargs, offset, tags, args))
+    }
+
+    /// Build from operands already in their arrays.
+    #[inline(always)]
+    fn from_packed(
+        raw: u32,
+        op: Op,
+        xlen: u8,
+        nargs: usize,
+        offset: i32,
+        tags: [Tag; MAX_ARGS],
+        args: [Arg; MAX_ARGS],
+    ) -> Self {
         Self {
             len: get_insn_size(raw),
-            kind_mask,
+            kind_mask: kind_mask(op),
             nargs: nargs as u8,
-            xlen: 64,
+            xlen,
             offset,
             raw,
             op,
@@ -120,11 +167,6 @@ impl Insn {
 
     pub fn get_xlen(&self) -> u8 {
         self.xlen
-    }
-
-    pub(crate) fn with_xlen(mut self, xlen: u8) -> Self {
-        self.xlen = xlen;
-        self
     }
 
     pub fn get_raw(&self) -> u32 {

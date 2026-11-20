@@ -1,4 +1,3 @@
-use crate::args::*;
 use crate::insn::*;
 use crate::isa::*;
 use std::collections::HashMap;
@@ -29,100 +28,14 @@ impl Disassembler {
         Self { xlen }
     }
 
-    pub fn extract_from_mask_match(&self, spec: &Spec, code: u32) -> Option<Insn> {
-        // Evaluate the spec's operand extractors into a fixed buffer. Any extractor
-        // reporting Arg::Error means the encoding is not this instruction after all.
-        let mut ops = [(Arg::Nothing, Tag::None); MAX_ARGS];
-        let mut n = 0;
-        for extract in spec.args.iter() {
-            let (arg, tag) = extract(code);
-            if arg.is_error() {
-                return None;
-            }
-            if matches!(arg, Arg::Nothing) {
-                continue;
-            }
-            assert!(
-                n < MAX_ARGS,
-                "spec {} lists more than {} operands",
-                spec.name(),
-                MAX_ARGS
-            );
-            ops[n] = (arg, tag);
-            n += 1;
-        }
-        let xlen = match self.xlen {
-            Xlen::XLEN32 => 32,
-            Xlen::XLEN64 => 64,
-        };
-        Some(Insn::new(code, spec.op, &ops[..n]).with_xlen(xlen))
-    }
-
     /// Disassemble a single instruction
     pub fn disassmeble_one(&self, code: u32) -> Option<Insn> {
-        // iterator over all isa specs
-        // first, check if the instruction is compressed
-        if is_compressed(code) {
-            // iterate over generic compressed specs
-            for spec in RV_ISA_SPECS_GENERIC_COMPRESSED.iter() {
-                if spec.compare(code) {
-                    let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() {
-                        return result;
-                    } else {
-                        continue;
-                    }
-                }
-            }
-            // iterate over xlen compressed specs
-            let xlen_specs = match self.xlen {
-                Xlen::XLEN32 => &*RV_ISA_SPECS_32_COMPRESSED,
-                Xlen::XLEN64 => &*RV_ISA_SPECS_64_COMPRESSED,
-            };
-            for spec in xlen_specs.iter() {
-                if spec.compare(code) {
-                    let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() {
-                        return result;
-                    } else {
-                        continue;
-                    }
-                }
-            }
-            return None;
+        match (is_compressed(code), &self.xlen) {
+            (true, Xlen::XLEN32) => decode_compressed_32(code),
+            (true, Xlen::XLEN64) => decode_compressed_64(code),
+            (false, Xlen::XLEN32) => decode_full_32(code),
+            (false, Xlen::XLEN64) => decode_full_64(code),
         }
-        // then, check if the instruction is a regular instruction
-        let spec = get_generic_full_specs_by_opcode(get_opcode(code));
-        if spec.is_some() {
-            // check if the masked result creates a match
-            for spec in spec.unwrap().iter() {
-                if spec.compare(code) {
-                    let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() {
-                        return result;
-                    } else {
-                        continue;
-                    }
-                }
-            }
-        }
-        let xlen_specs = match self.xlen {
-            Xlen::XLEN32 => get_32_full_specs_by_opcode(get_opcode(code)),
-            Xlen::XLEN64 => get_64_full_specs_by_opcode(get_opcode(code)),
-        };
-        if xlen_specs.is_some() {
-            for spec in xlen_specs.unwrap().iter() {
-                if spec.compare(code) {
-                    let result = self.extract_from_mask_match(spec, code);
-                    if result.is_some() {
-                        return result;
-                    } else {
-                        continue;
-                    }
-                }
-            }
-        }
-        None
     }
 
     /// Disassemble a single instruction from a string

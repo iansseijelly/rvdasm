@@ -49,7 +49,10 @@ Distinguishes XLEN of 32 or 64.
 
 ## Development Notes
 
-The `isa.rs` file is generated from [iansseijelly:riscv-opcodes](https://github.com/iansseijelly/riscv-opcodes).
+The `src/isa/` files are generated from [iansseijelly:riscv-opcodes](https://github.com/iansseijelly/riscv-opcodes).
 This repo is also registered as a submodule in `${ROOT}/riscv-opcodes`.
-Run `gen.sh` in that repo, with a Python that has PyYAML, to generate `isa.rs` and `isa_consts.rs`, then format
-them with `rustfmt --edition 2021 src/isa.rs src/isa_consts.rs`.
+Run `gen.sh` in that repo, with a Python that has PyYAML, to generate `src/isa/` and `isa_consts.rs`, then format
+them with `rustfmt --edition 2021 src/isa/*.rs src/isa_consts.rs`.
+
+`cargo bench --bench decode` measures decode throughput, in nanoseconds per instruction, on the objdump corpus; set
+`RVDASM_BENCH_ELF` to a RISC-V ELF to measure its code too, a real instruction mix.

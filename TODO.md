@@ -5,4 +5,4 @@
 * [x] add rvv support
 * [x] add riscv-opcode as a submodule
 * [ ] name CSRs
-* [ ] accelerate the decoding
+* [x] accelerate the decoding

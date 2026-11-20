@@ -1,4 +1,5 @@
 // The operand accessors: rd, rs1, rs2, and imm.
+use rvdasm::args::Tag;
 use rvdasm::disassembler::*;
 use rvdasm::insn::Insn;
 
@@ -55,8 +56,46 @@ fn a_compressed_destination_that_is_also_a_source_is_both() {
 #[test]
 fn a_csr_instruction_has_its_csr() {
     let csrr = decode(0xf1402573); // csrr a0,mhartid: csrrs a0,mhartid,zero
-    assert_eq!((csrr.rd(), csrr.rs1(), csrr.csr()), (Some(10), Some(0), Some(0xf14)));
+    assert_eq!(
+        (csrr.rd(), csrr.rs1(), csrr.csr()),
+        (Some(10), Some(0), Some(0xf14))
+    );
     let csrwi = decode(0x30445073); // csrwi mie,8
     assert_eq!((csrwi.csr(), csrwi.imm()), (Some(0x304), Some(8)));
     assert_eq!(decode(0x00b50533).csr(), None); // add a0,a0,a1
+}
+
+/// No instruction lists two operands with the same role, which `Insn::from_parts` relies on: it does not merge a
+/// repeated tag, as `Insn::new` does. Checked on every encoding in both objdump corpora.
+#[test]
+fn no_operand_role_repeats() {
+    for (file, xlen) in [
+        ("objdump_rv32.tsv", Xlen::XLEN32),
+        ("objdump_rv64.tsv", Xlen::XLEN64),
+    ] {
+        let dasm = Disassembler::new(xlen);
+        let path = format!("{}/tests/data/{file}", env!("CARGO_MANIFEST_DIR"));
+        for line in std::fs::read_to_string(path).unwrap().lines() {
+            let Some(hex) = line.split('\t').nth(1).filter(|_| !line.starts_with('#')) else {
+                continue;
+            };
+            let Some(insn) = dasm.disassmeble_one(u32::from_str_radix(hex, 16).unwrap()) else {
+                continue;
+            };
+            let tags: Vec<_> = insn
+                .operands()
+                .map(|(t, _)| t)
+                .filter(|&t| t != Tag::None)
+                .collect();
+            let mut unique = tags.clone();
+            unique.sort_by_key(|t| *t as u8);
+            unique.dedup();
+            assert_eq!(
+                unique.len(),
+                tags.len(),
+                "{hex} ({}) repeats a tag: {tags:?}",
+                insn.op.name()
+            );
+        }
+    }
 }
